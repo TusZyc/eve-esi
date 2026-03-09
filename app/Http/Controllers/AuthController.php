@@ -71,9 +71,9 @@ class AuthController extends Controller
             'has_refresh' => !empty($tokenData['refresh_token']),
         ]);
         
-        // 使用 Access Token 获取角色信息
+        // 使用 Access Token 获取角色信息（使用官方验证端点）
         $characterResponse = Http::withToken($tokenData['access_token'])
-            ->get(config('esi.base_url') . 'verify/');
+            ->get('https://login.evepc.163.com/oauth/verify');
         
         if ($characterResponse->failed()) {
             Log::error('获取角色信息失败', [

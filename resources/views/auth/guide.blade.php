@@ -83,30 +83,42 @@
 
             <!-- 权限说明 -->
             <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 eve-glow">
-                <h2 class="text-xl font-semibold mb-4">📊 申请权限</h2>
-                <div class="grid grid-cols-2 gap-3 text-sm">
-                    <div class="flex items-center">
-                        <span class="text-green-400 mr-2">✓</span>
-                        <span>技能队列</span>
-                    </div>
-                    <div class="flex items-center">
-                        <span class="text-green-400 mr-2">✓</span>
-                        <span>技能信息</span>
-                    </div>
-                    <div class="flex items-center">
-                        <span class="text-green-400 mr-2">✓</span>
-                        <span>角色资产</span>
-                    </div>
-                    <div class="flex items-center">
-                        <span class="text-green-400 mr-2">✓</span>
-                        <span>钱包余额</span>
-                    </div>
+                <h2 class="text-xl font-semibold mb-4">📊 申请权限（70+ 个完整权限）</h2>
+                <div class="grid grid-cols-3 gap-2 text-xs text-blue-100 max-h-64 overflow-y-auto">
+                    <div>📅 日历</div>
+                    <div>📍 位置</div>
+                    <div>📧 邮件</div>
+                    <div>📚 技能</div>
+                    <div>💰 钱包</div>
+                    <div>🔍 搜索</div>
+                    <div>🧬 克隆</div>
+                    <div>👥 联系人</div>
+                    <div>🌌 宇宙</div>
+                    <div>💥 击杀</div>
+                    <div>🏢 军团</div>
+                    <div>📦 资产</div>
+                    <div>🪐 行星</div>
+                    <div>🚀 舰队</div>
+                    <div>🖥️ UI</div>
+                    <div>⚙️ 配船</div>
+                    <div>📈 市场</div>
+                    <div>🎖️ 忠诚点</div>
+                    <div>🏅 勋章</div>
+                    <div>📊 声望</div>
+                    <div>🔬 研究</div>
+                    <div>🏭 工业</div>
+                    <div>📋 蓝图</div>
+                    <div>📢 通知</div>
+                    <div>📜 合同</div>
+                    <div>😴 疲劳</div>
+                    <div>⛏️ 采矿</div>
+                    <div>👑 标题</div>
                 </div>
                 <div class="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 mt-4">
                     <p class="text-sm text-blue-200">
-                        <strong>✅ Authorization Code 模式优势：</strong><br>
-                        可获得 Refresh Token，永久有效（约 1 个月不使用会被清理）<br>
-                        相比 Implicit 模式更安全、更持久
+                        <strong>✅ 3V 模式完整权限：</strong><br>
+                        使用官方 Client ID，70+ 个完整权限<br>
+                        Authorization Code 模式，可获得 Refresh Token，永久有效
                     </p>
                 </div>
             </div>
@@ -122,16 +134,106 @@
         function generateAuthUrl() {
             // 配置 - 使用 3V 模式的官方 Client ID
             const clientId = 'bc90aa496a404724a93f41b4f4e97761';
-            const redirectUri = 'https://esi.evepc.163.com/ui/oauth2-redirect.html';
+            const redirectUri = 'https://ali-esi.evepc.163.com/ui/oauth2-redirect.html';
             const state = generateRandomState();
-            const deviceId = generateDeviceId();
+            const deviceId = 'tus';  // 设置为 tus
             
-            // 权限列表（最多 4 个）
+            // 完整的 70+ 个权限（3V 模式）
             const scopes = [
+                // 日历
+                'esi-calendar.respond_calendar_events.v1',
+                'esi-calendar.read_calendar_events.v1',
+                // 位置
+                'esi-location.read_location.v1',
+                'esi-location.read_ship_type.v1',
+                'esi-location.read_online.v1',
+                // 邮件
+                'esi-mail.organize_mail.v1',
+                'esi-mail.read_mail.v1',
+                'esi-mail.send_mail.v1',
+                // 技能
                 'esi-skills.read_skills.v1',
                 'esi-skills.read_skillqueue.v1',
+                // 钱包
+                'esi-wallet.read_character_wallet.v1',
+                'esi-wallet.read_corporation_wallets.v1',
+                // 搜索
+                'esi-search.search_structures.v1',
+                // 克隆
+                'esi-clones.read_clones.v1',
+                'esi-clones.read_implants.v1',
+                // 联系人
+                'esi-characters.read_contacts.v1',
+                'esi-characters.write_contacts.v1',
+                'esi-corporations.read_contacts.v1',
+                'esi-alliances.read_contacts.v1',
+                // 宇宙
+                'esi-universe.read_structures.v1',
+                // 击杀
+                'esi-killmails.read_killmails.v1',
+                'esi-killmails.read_corporation_killmails.v1',
+                // 军团
+                'esi-corporations.read_corporation_membership.v1',
+                'esi-corporations.read_structures.v1',
+                'esi-corporations.track_members.v1',
+                'esi-corporations.read_divisions.v1',
+                'esi-corporations.read_titles.v1',
+                'esi-corporations.read_blueprints.v1',
+                'esi-corporations.read_standings.v1',
+                'esi-corporations.read_starbases.v1',
+                'esi-corporations.read_facilities.v1',
+                'esi-corporations.read_medals.v1',
+                'esi-corporations.read_container_logs.v1',
+                'esi-corporations.read_fw_stats.v1',
+                // 资产
                 'esi-assets.read_assets.v1',
-                'esi-wallet.read_character_wallet.v1'
+                'esi-assets.read_corporation_assets.v1',
+                // 行星
+                'esi-planets.manage_planets.v1',
+                'esi-planets.read_customs_offices.v1',
+                // 舰队
+                'esi-fleets.read_fleet.v1',
+                'esi-fleets.write_fleet.v1',
+                // UI
+                'esi-ui.open_window.v1',
+                'esi-ui.write_waypoint.v1',
+                // 配船
+                'esi-fittings.read_fittings.v1',
+                'esi-fittings.write_fittings.v1',
+                // 市场
+                'esi-markets.structure_markets.v1',
+                'esi-markets.read_character_orders.v1',
+                'esi-markets.read_corporation_orders.v1',
+                // 忠诚点
+                'esi-characters.read_loyalty.v1',
+                // 机会
+                'esi-characters.read_opportunities.v1',
+                // 勋章
+                'esi-characters.read_medals.v1',
+                // 声望
+                'esi-characters.read_standings.v1',
+                // 研究
+                'esi-characters.read_agents_research.v1',
+                // 工作
+                'esi-industry.read_character_jobs.v1',
+                'esi-industry.read_corporation_jobs.v1',
+                // 蓝图
+                'esi-characters.read_blueprints.v1',
+                // 角色
+                'esi-characters.read_corporation_roles.v1',
+                'esi-characters.read_notifications.v1',
+                'esi-characters.read_fw_stats.v1',
+                'esi-characterstats.read.v1',
+                // 合同
+                'esi-contracts.read_character_contracts.v1',
+                'esi-contracts.read_corporation_contracts.v1',
+                // 疲劳
+                'esi-characters.read_fatigue.v1',
+                // 采矿
+                'esi-industry.read_character_mining.v1',
+                'esi-industry.read_corporation_mining.v1',
+                // 标题
+                'esi-characters.read_titles.v1',
             ];
             
             // 构建授权 URL（Authorization Code 模式：response_type=code）
@@ -141,7 +243,6 @@
                 `redirect_uri=${encodeURIComponent(redirectUri)}&` +
                 `state=${state}&` +
                 `scope=${encodeURIComponent(scopes.join(' '))}&` +
-                `realm=eve&` +
                 `device_id=${deviceId}`;
             
             // 显示结果
