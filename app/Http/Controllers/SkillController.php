@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use App\Helpers\EveHelper;
-    
+
+class SkillController extends Controller
+{
     /**
      * 显示技能队列页面
      */
@@ -118,24 +120,6 @@ use App\Helpers\EveHelper;
                 'refresh_token' => $tokenData['refresh_token'] ?? $user->refresh_token,
                 'token_expires_at' => now()->addSeconds($tokenData['expires_in']),
             ]);
-        }
-    }
-    
-    /**
-     * 格式化时间
-     */
-    private function formatTime($seconds)
-    {
-        if ($seconds < 60) {
-            return $seconds . '秒';
-        } elseif ($seconds < 3600) {
-            return floor($seconds / 60) . '分' . ($seconds % 60) . '秒';
-        } elseif ($seconds < 86400) {
-            return floor($seconds / 3600) . '小时' . floor(($seconds % 3600) / 60) . '分';
-        } else {
-            $days = floor($seconds / 86400);
-            $hours = floor(($seconds % 86400) / 3600);
-            return $days . '天' . $hours . '小时';
         }
     }
 }

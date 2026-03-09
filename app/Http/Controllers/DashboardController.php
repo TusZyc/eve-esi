@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Models\User;
+use App\Helpers\EveHelper;
 
 class DashboardController extends Controller
 {
@@ -44,6 +45,12 @@ class DashboardController extends Controller
             
             if ($queueResponse->ok()) {
                 $skillQueue = $queueResponse->json();
+                
+                // 为技能队列添加中文名称
+                foreach ($skillQueue as &$queueItem) {
+                    $skillId = $queueItem['skill_id'] ?? 0;
+                    $queueItem['skill_name'] = EveHelper::getNameById($skillId, 'skill');
+                }
             }
         }
         
