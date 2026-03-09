@@ -12,6 +12,13 @@
         .eve-glow {
             box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
         }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
     </style>
 </head>
 <body class="eve-bg min-h-screen text-white">
@@ -23,12 +30,58 @@
         </header>
 
         <main class="max-w-3xl mx-auto">
-            <!-- 授权按钮 -->
+            <!-- 步骤 1：清除缓存 -->
             <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-6 eve-glow">
-                <h2 class="text-2xl font-semibold mb-6 text-center">🔐 开始授权</h2>
+                <h2 class="text-2xl font-semibold mb-6 text-center">📋 第 1 步：清除授权缓存</h2>
                 
                 <div class="space-y-6">
-                    <!-- 步骤说明 -->
+                    <div class="text-center space-y-3">
+                        <p class="text-blue-100">首次授权前，需要先清除旧的授权缓存：</p>
+                        
+                        <div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 text-left text-sm text-yellow-200">
+                            <strong>💡 为什么要清除缓存？</strong><br>
+                            如果您之前授权过其他 EVE 工具，可能需要先清除旧授权，确保本次授权正常生效。
+                        </div>
+                    </div>
+                    
+                    <!-- 清除缓存按钮 -->
+                    <button onclick="clearCache()" 
+                            id="clearCacheBtn"
+                            class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-8 py-4 rounded-lg transition-all eve-glow hover:scale-105 text-lg">
+                        🗑️ 点击清除授权缓存
+                    </button>
+                    
+                    <!-- 等待提示 -->
+                    <div id="clearCacheTip" class="hidden">
+                        <div class="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4">
+                            <p class="text-blue-200">
+                                <strong>📝 操作步骤：</strong>
+                            </p>
+                            <ol class="list-decimal list-inside space-y-2 text-blue-100 mt-2">
+                                <li>在新打开的窗口中，会自动清除授权缓存</li>
+                                <li>等待页面显示 <strong class="text-red-400">"抱歉，处理你的请求时发生了错误"</strong></li>
+                                <li>看到错误提示后，关闭新窗口</li>
+                                <li>返回此页面，继续下一步</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <!-- 清除完成提示 -->
+                    <div id="clearCacheDone" class="hidden">
+                        <div class="bg-green-500/20 border border-green-500/50 rounded-lg p-4">
+                            <p class="text-green-300">
+                                ✅ <strong>缓存已清除！</strong>请继续下一步授权操作
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 步骤 2：开始授权 -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-6 eve-glow">
+                <h2 class="text-2xl font-semibold mb-6 text-center">🔐 第 2 步：开始授权</h2>
+                
+                <div class="space-y-6">
                     <div class="text-center space-y-3">
                         <p class="text-blue-100">点击下方按钮，在新窗口完成授权：</p>
                         
@@ -52,8 +105,10 @@
                     
                     <!-- 授权按钮 -->
                     <button onclick="openAuth()" 
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg transition-all eve-glow hover:scale-105 text-lg">
-                        🔗 点击前往授权页面
+                            id="authBtn"
+                            disabled
+                            class="w-full bg-gray-600 text-gray-400 font-semibold px-8 py-4 rounded-lg transition-all eve-glow text-lg cursor-not-allowed">
+                        🔗 请先完成第 1 步
                     </button>
                     
                     <!-- 等待提示 -->
@@ -64,9 +119,9 @@
                 </div>
             </div>
 
-            <!-- 手动输入 Code -->
+            <!-- 步骤 3：填写授权码 -->
             <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 eve-glow">
-                <h2 class="text-xl font-semibold mb-4">📋 填写授权码</h2>
+                <h2 class="text-xl font-semibold mb-4">📋 第 3 步：填写授权码</h2>
                 
                 <p class="text-sm text-blue-100 mb-4">
                     授权完成后，从新窗口的地址栏复制授权码粘贴到这里：
@@ -156,9 +211,51 @@
     <script>
         let authWindow = null;
         let checkInterval = null;
+        let cacheCleared = false;
         
+        // 第 1 步：清除授权缓存
+        function clearCache() {
+            // 打开清除缓存的页面
+            const clearCacheUrl = 'https://login.evepc.163.com/account/logoff';
+            const cacheWindow = window.open(clearCacheUrl, '_blank', 'width=600,height=400');
+            
+            // 显示等待提示
+            document.getElementById('clearCacheTip').classList.remove('hidden');
+            document.getElementById('clearCacheBtn').disabled = true;
+            document.getElementById('clearCacheBtn').classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // 定期检查窗口是否关闭
+            if (cacheWindow) {
+                const checkCacheInterval = setInterval(function() {
+                    if (cacheWindow && cacheWindow.closed) {
+                        clearInterval(checkCacheInterval);
+                        
+                        // 清除完成
+                        cacheCleared = true;
+                        document.getElementById('clearCacheTip').classList.add('hidden');
+                        document.getElementById('clearCacheDone').classList.remove('hidden');
+                        
+                        // 启用授权按钮
+                        const authBtn = document.getElementById('authBtn');
+                        authBtn.disabled = false;
+                        authBtn.classList.remove('bg-gray-600', 'text-gray-400', 'cursor-not-allowed');
+                        authBtn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'text-white');
+                        authBtn.innerHTML = '🔗 点击前往授权页面';
+                    }
+                }, 1000);
+            } else {
+                alert('浏览器阻止了弹出窗口，请允许弹出窗口后重试');
+            }
+        }
+        
+        // 第 2 步：开始授权
         function openAuth() {
-            // 生成随机 state（3V 使用短 state，5 个字符）
+            if (!cacheCleared) {
+                alert('请先完成第 1 步：清除授权缓存');
+                return;
+            }
+            
+            // 生成随机 state（3 个字节 = 6 个字符，和 3V 一样）
             const state = Array.from(crypto.getRandomValues(new Uint8Array(3)), 
                 b => b.toString(16).padStart(2, '0')).join('');
             
