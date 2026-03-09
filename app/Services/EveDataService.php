@@ -32,7 +32,7 @@ class EveDataService
      */
     public function __construct()
     {
-        $this->dataPath = base_path('data/evedata.json');
+        $this->dataPath = base_path('data/items.json');
         $this->metaPath = base_path('data/evedata_meta.json');
     }
     
