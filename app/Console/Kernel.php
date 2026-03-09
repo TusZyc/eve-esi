@@ -12,7 +12,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        //
+        // 每周一凌晨 2 点更新 EVE 物品数据
+        $schedule->command('eve:update-data')
+                 ->weeklyOn(1, '02:00')
+                 ->withoutOverlapping();
     }
 
     /**

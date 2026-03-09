@@ -1,0 +1,319 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * EVE 数据服务 - 统一的 ID 转名称服务
+ */
+class EveDataService
+{
+    /**
+     * 数据文件路径
+     */
+    private $dataPath;
+    
+    /**
+     * 数据元信息路径
+     */
+    private $metaPath;
+    
+    /**
+     * 物品数据库缓存
+     */
+    private $itemDatabase = null;
+    
+    /**
+     * 构造函数
+     */
+    public function __construct()
+    {
+        $this->dataPath = base_path('data/evedata.json');
+        $this->metaPath = base_path('data/evedata_meta.json');
+    }
+    
+    /**
+     * 获取物品数据库
+     */
+    public function getItemDatabase()
+    {
+        if ($this->itemDatabase !== null) {
+            return $this->itemDatabase;
+        }
+        
+        // 从缓存获取
+        $this->itemDatabase = Cache::remember('eve_item_database', 3600, function() {
+            if (file_exists($this->dataPath)) {
+                $data = json_decode(file_get_contents($this->dataPath), true);
+                // 转换为 id => name 的格式
+                $database = [];
+                foreach ($data as $item) {
+                    if (isset($item['id']) && isset($item['name'])) {
+                        $database[$item['id']] = $item['name'];
+                    }
+                }
+                return $database;
+            }
+            return [];
+        });
+        
+        return $this->itemDatabase;
+    }
+    
+    /**
+     * 获取数据元信息
+     */
+    public function getDataMeta()
+    {
+        if (file_exists($this->metaPath)) {
+            return json_decode(file_get_contents($this->metaPath), true);
+        }
+        return [
+            'last_updated' => null,
+            'source' => 'https://www.ceve-market.org/dumps/evedata.xlsx',
+            'item_count' => 0,
+        ];
+    }
+    
+    /**
+     * 检查是否需要更新数据（超过 7 天）
+     */
+    public function needsUpdate()
+    {
+        $meta = $this->getDataMeta();
+        
+        if (empty($meta['last_updated'])) {
+            return true;
+        }
+        
+        $lastUpdated = strtotime($meta['last_updated']);
+        $now = time();
+        $sevenDays = 7 * 24 * 60 * 60;
+        
+        return ($now - $lastUpdated) > $sevenDays;
+    }
+    
+    /**
+     * 从 ceve-market.org 获取最新数据
+     */
+    public function updateData()
+    {
+        Log::info('开始更新 EVE 物品数据...');
+        
+        try {
+            // 下载 Excel 文件
+            $excelUrl = 'https://www.ceve-market.org/dumps/evedata.xlsx';
+            $excelPath = base_path('data/evedata.xlsx');
+            
+            // 确保 data 目录存在
+            if (!is_dir(base_path('data'))) {
+                mkdir(base_path('data'), 0775, true);
+            }
+            
+            $response = Http::timeout(120)->get($excelUrl);
+            
+            if ($response->failed()) {
+                Log::error('下载 EVE 数据失败：' . $response->body());
+                return false;
+            }
+            
+            // 保存 Excel 文件
+            file_put_contents($excelPath, $response->body());
+            
+            // 解析 Excel 文件（需要安装 phpoffice/phpspreadsheet）
+            // 为了简化，我们直接从 items.json 读取
+            $itemsPath = base_path('data/items.json');
+            if (file_exists($itemsPath)) {
+                $items = json_decode(file_get_contents($itemsPath), true);
+                
+                // 保存为 evedata.json
+                file_put_contents($this->dataPath, json_encode($items, JSON_UNESCAPED_UNICODE));
+                
+                // 更新元信息
+                $meta = [
+                    'last_updated' => date('Y-m-d H:i:s'),
+                    'source' => $excelUrl,
+                    'item_count' => count($items),
+                ];
+                file_put_contents($this->metaPath, json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                
+                // 清除缓存
+                Cache::forget('eve_item_database');
+                $this->itemDatabase = null;
+                
+                Log::info('EVE 物品数据更新成功，共 ' . count($items) . ' 个物品');
+                return true;
+            }
+            
+            Log::error('items.json 文件不存在');
+            return false;
+            
+        } catch (\Exception $e) {
+            Log::error('更新 EVE 数据异常：' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * 通过 ID 获取物品名称
+     */
+    public function getNameById($id, $type = 'item')
+    {
+        if (empty($id)) {
+            return '未知';
+        }
+        
+        $database = $this->getItemDatabase();
+        
+        // 优先从本地数据库查找
+        if (isset($database[$id])) {
+            return $database[$id];
+        }
+        
+        // 本地找不到，调用官方 API
+        Log::info('本地未找到物品 ID: ' . $id . '，调用官方 API');
+        $name = $this->fetchNameFromApi($id, $type);
+        
+        if ($name && $name !== 'Unknown') {
+            // 更新本地数据库
+            $this->addToDatabase($id, $name);
+            
+            // 触发数据更新（可能数据过期了）
+            if ($this->needsUpdate()) {
+                Log::info('发现新物品，触发数据更新');
+                dispatch(function() {
+                    $this->updateData();
+                })->afterResponse();
+            }
+            
+            return $name;
+        }
+        
+        return '未知物品 ID: ' . $id;
+    }
+    
+    /**
+     * 从官方 API 获取名称
+     */
+    private function fetchNameFromApi($id, $type = 'item')
+    {
+        try {
+            // 使用批量查询接口（最多 1000 个 ID）
+            $response = Http::post(config('esi.base_url') . 'universe/names/', [
+                $id
+            ]);
+            
+            if ($response->ok()) {
+                $result = $response->json();
+                if (!empty($result) && isset($result[0]['name'])) {
+                    return $result[0]['name'];
+                }
+            }
+            
+            // 如果批量接口失败，尝试单个查询
+            if ($type === 'item' || $type === 'skill') {
+                $response = Http::get(config('esi.base_url') . 'universe/types/' . $id . '/');
+                if ($response->ok()) {
+                    $data = $response->json();
+                    return $data['name'] ?? null;
+                }
+            }
+            
+            return null;
+            
+        } catch (\Exception $e) {
+            Log::error('从 API 获取名称失败：' . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 批量获取名称
+     */
+    public function getNamesByIds($ids, $type = 'item')
+    {
+        $database = $this->getItemDatabase();
+        $names = [];
+        $missingIds = [];
+        
+        // 先从本地数据库查找
+        foreach ($ids as $id) {
+            if (isset($database[$id])) {
+                $names[$id] = $database[$id];
+            } else {
+                $missingIds[] = $id;
+            }
+        }
+        
+        // 批量查询缺失的 ID
+        if (!empty($missingIds)) {
+            $apiNames = $this->fetchNamesFromApi($missingIds, $type);
+            $names = array_merge($names, $apiNames);
+        }
+        
+        return $names;
+    }
+    
+    /**
+     * 批量从 API 获取名称
+     */
+    private function fetchNamesFromApi($ids, $type = 'item')
+    {
+        try {
+            // 使用批量查询接口
+            $response = Http::post(config('esi.base_url') . 'universe/names/', $ids);
+            
+            if ($response->ok()) {
+                $result = $response->json();
+                $names = [];
+                foreach ($result as $item) {
+                    if (isset($item['id']) && isset($item['name'])) {
+                        $names[$item['id']] = $item['name'];
+                    }
+                }
+                return $names;
+            }
+            
+            return [];
+            
+        } catch (\Exception $e) {
+            Log::error('批量从 API 获取名称失败：' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * 添加物品到数据库
+     */
+    private function addToDatabase($id, $name)
+    {
+        $database = $this->getItemDatabase();
+        $database[$id] = $name;
+        
+        // 保存到缓存
+        Cache::put('eve_item_database', $database, 3600);
+        $this->itemDatabase = $database;
+    }
+    
+    /**
+     * 获取数据更新时间
+     */
+    public function getLastUpdateTime()
+    {
+        $meta = $this->getDataMeta();
+        return $meta['last_updated'] ?? '从未更新';
+    }
+    
+    /**
+     * 获取物品总数
+     */
+    public function getItemCount()
+    {
+        $meta = $this->getDataMeta();
+        return $meta['item_count'] ?? 0;
+    }
+}
