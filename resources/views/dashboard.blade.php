@@ -146,15 +146,15 @@
 
         <!-- 快捷操作 -->
         <div class="grid md:grid-cols-3 gap-4">
+            <a href="{{ route('skills.index') }}" 
+               class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow">
+                <div class="text-3xl mb-2">📚</div>
+                <div class="font-semibold">技能队列</div>
+            </a>
             <a href="{{ route('characters.index') }}" 
                class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow">
                 <div class="text-3xl mb-2">👥</div>
                 <div class="font-semibold">角色管理</div>
-            </a>
-            <a href="{{ route('skills.queue') }}" 
-               class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow">
-                <div class="text-3xl mb-2">📖</div>
-                <div class="font-semibold">完整技能队列</div>
             </a>
             <a href="{{ route('assets.index') }}" 
                class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow">

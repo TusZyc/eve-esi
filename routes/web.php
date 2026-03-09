@@ -37,6 +37,7 @@ Route::middleware(['auth'])->group(function () {
     });
     
     // 技能队列
+    Route::get('/skills', [SkillController::class, 'index'])->name('skills.index');
     Route::get('/skills/queue', [CharacterController::class, 'skillQueue'])->name('skills.queue');
     
     // 资产
