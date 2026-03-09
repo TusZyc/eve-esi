@@ -93,8 +93,11 @@
                                             #{{ $index + 1 }}
                                         </span>
                                         <span class="text-lg font-semibold">
-                                            技能 ID: {{ $queueItem['skill_id'] ?? 'N/A' }}
+                                            {{ $queueItem['skill_name'] ?? '未知技能' }}
                                         </span>
+                                    </div>
+                                    <div class="text-sm text-blue-300 mt-1">
+                                        技能 ID: {{ $queueItem['skill_id'] ?? 'N/A' }}
                                     </div>
                                     <div class="text-sm text-blue-300 mt-1">
                                         等级：{{ $queueItem['finished_level'] ?? 0 }} / 5
@@ -174,14 +177,21 @@
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 @foreach(array_slice($skillsData['skills'], 0, 20) as $skill)
                     <div class="bg-white/5 rounded-lg p-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-semibold">技能 ID: {{ $skill['skill_id'] ?? 'N/A' }}</span>
+                        <div class="mb-2">
+                            <div class="font-semibold text-white">
+                                {{ $skill['skill_name'] ?? '未知技能' }}
+                            </div>
+                            <div class="text-xs text-blue-300 mt-1">
+                                ID: {{ $skill['skill_id'] ?? 'N/A' }}
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
                             <span class="text-xs bg-blue-600 px-2 py-1 rounded">
                                 等级 {{ $skill['active_level'] ?? 0 }}
                             </span>
-                        </div>
-                        <div class="text-sm text-blue-300">
-                            技能点：{{ number_format($skill['skill_points_in_skill'] ?? 0) }}
+                            <span class="text-sm text-blue-300">
+                                {{ number_format($skill['skill_points_in_skill'] ?? 0) }} SP
+                            </span>
                         </div>
                     </div>
                 @endforeach

@@ -9,6 +9,34 @@ use Illuminate\Support\Facades\Cache;
 class SkillController extends Controller
 {
     /**
+     * 物品数据库缓存
+     */
+    private function getItemDatabase()
+    {
+        return Cache::remember('eve_items_database', 86400, function() {
+            $itemsPath = base_path('data/items.json');
+            if (file_exists($itemsPath)) {
+                $items = json_decode(file_get_contents($itemsPath), true);
+                // 转换为 id => name 的格式
+                $database = [];
+                foreach ($items as $item) {
+                    $database[$item['id']] = $item['name'];
+                }
+                return $database;
+            }
+            return [];
+        });
+    }
+    
+    /**
+     * 获取技能名称
+     */
+    private function getSkillName($skillId, $itemDatabase)
+    {
+        return $itemDatabase[$skillId] ?? '未知技能 ID: ' . $skillId;
+    }
+    
+    /**
      * 显示技能队列页面
      */
     public function index(Request $request)
@@ -20,11 +48,28 @@ class SkillController extends Controller
             $this->refreshToken($user);
         }
         
+        // 获取物品数据库
+        $itemDatabase = $this->getItemDatabase();
+        
         // 获取技能信息
         $skillsData = $this->getSkillsData($user);
         
         // 获取技能队列
         $skillQueue = $this->getSkillQueue($user);
+        
+        // 为技能队列添加技能名称
+        foreach ($skillQueue as &$queueItem) {
+            $skillId = $queueItem['skill_id'] ?? 0;
+            $queueItem['skill_name'] = $this->getSkillName($skillId, $itemDatabase);
+        }
+        
+        // 为已学技能添加技能名称
+        if (!empty($skillsData['skills'])) {
+            foreach ($skillsData['skills'] as &$skill) {
+                $skillId = $skill['skill_id'] ?? 0;
+                $skill['skill_name'] = $this->getSkillName($skillId, $itemDatabase);
+            }
+        }
         
         // 计算技能点
         $totalSP = $skillsData['total_sp'] ?? 0;
