@@ -182,13 +182,13 @@ class EveDataService
             // 更新本地数据库
             $this->addToDatabase($id, $name);
             
-            // 触发数据更新（可能数据过期了）
-            if ($this->needsUpdate()) {
-                Log::info('发现新物品，触发数据更新');
-                dispatch(function() {
-                    $this->updateData();
-                })->afterResponse();
-            }
+            // 触发数据更新（可能数据过期了）- 暂时禁用，避免队列问题
+            // if ($this->needsUpdate()) {
+            //     Log::info('发现新物品，触发数据更新');
+            //     dispatch(function() {
+            //         $this->updateData();
+            //     })->afterResponse();
+            // }
             
             return $name;
         }
