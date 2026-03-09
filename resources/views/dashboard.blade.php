@@ -119,9 +119,14 @@
                 @foreach(array_slice($skillQueue, 0, 5) as $index => $queueItem)
                 <div class="bg-white/5 rounded-lg p-4">
                     <div class="flex justify-between items-center mb-2">
-                        <span class="font-medium">
-                            {{ $index + 1 }}. 技能 ID: {{ $queueItem['skill_id'] ?? 'N/A' }}
-                        </span>
+                        <div>
+                            <span class="font-medium">
+                                {{ $index + 1 }}. {{ $queueItem['skill_name'] ?? '未知技能' }}
+                            </span>
+                            <span class="text-xs text-blue-300 ml-2">
+                                (ID: {{ $queueItem['skill_id'] ?? 'N/A' }})
+                            </span>
+                        </div>
                         <span class="text-sm text-blue-200">
                             等级 {{ $queueItem['finished_level'] ?? 0 }}
                         </span>
