@@ -209,17 +209,18 @@
                                         </div>
                                         <div class="flex justify-between items-center text-xs">
                                             <span class="text-blue-300">
-                                                {{ number_format($skill['skill_points_in_skill'] ?? 0) }} SP
+                                                {{ number_format($skill['skill_points_in_skill'] ?? $skill['trained_skill_points'] ?? 0) }} SP
                                             </span>
-                                            @if($skill['active_level'] == 5)
+                                            @php $level = $skill['active_level'] ?? $skill['trained_level'] ?? 0; @endphp
+                                            @if($level == 5)
                                                 <span class="text-green-400">✅ 满级</span>
                                             @endif
                                         </div>
                                         <!-- 技能等级进度条 -->
                                         @php
                                             $spForLevel = [0, 0, 250, 1414, 8000, 45255];
-                                            $currentLevel = $skill['active_level'] ?? 0;
-                                            $currentSP = $skill['skill_points_in_skill'] ?? 0;
+                                            $currentLevel = $skill['active_level'] ?? $skill['trained_level'] ?? 0;
+                                            $currentSP = $skill['skill_points_in_skill'] ?? $skill['trained_skill_points'] ?? 0;
                                             $nextLevelSP = $spForLevel[$currentLevel + 1] ?? $currentSP;
                                             $prevLevelSP = $spForLevel[$currentLevel] ?? 0;
                                             $progress = $currentLevel >= 5 ? 100 : (($currentSP - $prevLevelSP) / ($nextLevelSP - $prevLevelSP)) * 100;
