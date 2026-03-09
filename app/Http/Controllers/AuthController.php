@@ -44,8 +44,8 @@ class AuthController extends Controller
                 ->with('error', '无法从 URL 中提取授权码（code），请检查 URL 是否正确');
         }
         
-        // 验证 state（防止 CSRF）
-        $savedState = session('esi_state');
+        // 验证 state（防止 CSRF）- 从表单或 session 获取
+        $savedState = $request->input('esi_state') ?? session('esi_state');
         if ($state && $savedState && $state !== $savedState) {
             Log::error('State 验证失败', [
                 'expected' => $savedState,

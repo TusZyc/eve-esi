@@ -129,6 +129,7 @@
                 
                 <form action="{{ route('auth.callback') }}" method="POST" class="space-y-4">
                     @csrf
+                    <input type="hidden" name="esi_state" id="esiStateInput" value="{{ session('esi_state') }}" />
                     <div>
                         <label class="block text-sm text-blue-300 mb-2">授权码（code）：</label>
                         <input type="text" name="code" id="codeInput"
