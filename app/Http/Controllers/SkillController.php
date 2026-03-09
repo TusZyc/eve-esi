@@ -33,17 +33,22 @@ class SkillController extends Controller
             $queueItem['skill_name'] = EveHelper::getNameById($skillId, 'skill');
         }
         
-        // 为已学技能添加技能名称
+        // 为已学技能添加技能名称和分组信息
         if (!empty($skillsData['skills'])) {
             $skillIds = array_column($skillsData['skills'], 'skill_id');
             $skillNames = EveHelper::getNamesByIds($skillIds, 'skill');
+            $skillGroups = $this->getSkillGroups($skillIds);
             
             foreach ($skillsData['skills'] as &$skill) {
                 $skillId = $skill['skill_id'] ?? 0;
-                // 确保 skillId 是整数，与数组键名匹配
                 $skillId = (int) $skillId;
                 $skill['skill_name'] = $skillNames[$skillId] ?? EveHelper::getNameById($skillId, 'skill');
+                $skill['group_name'] = $skillGroups[$skillId]['group_name'] ?? '其他';
+                $skill['group_id'] = $skillGroups[$skillId]['group_id'] ?? 0;
             }
+            
+            // 按分组排序技能
+            $skillsData['skills_by_group'] = $this->groupSkillsByCategory($skillsData['skills']);
         }
         
         // 计算技能点
@@ -81,6 +86,82 @@ class SkillController extends Controller
             
             return $response->ok() ? $response->json() : null;
         });
+    }
+    
+    /**
+     * 获取技能分组信息
+     */
+    private function getSkillGroups($skillIds)
+    {
+        // 缓存技能分组信息
+        return Cache::remember('skill_groups_' . md5(implode(',', $skillIds)), 86400, function() use ($skillIds) {
+            $groups = [];
+            
+            // 批量获取技能详细信息（包含 group_id）
+            $response = Http::get(config('esi.base_url') . 'universe/types/', [
+                'ids' => $skillIds
+            ]);
+            
+            if ($response->ok()) {
+                $types = $response->json();
+                foreach ($types as $type) {
+                    $groupId = $type['group_id'] ?? 0;
+                    // 获取分组名称
+                    $groupName = $this->getGroupname($groupId);
+                    $groups[(int) $type['type_id']] = [
+                        'group_id' => $groupId,
+                        'group_name' => $groupName,
+                    ];
+                }
+            }
+            
+            return $groups;
+        });
+    }
+    
+    /**
+     * 获取分组名称
+     */
+    private function getGroupname($groupId)
+    {
+        return Cache::remember('group_name_' . $groupId, 604800, function() use ($groupId) {
+            $response = Http::get(config('esi.base_url') . 'universe/groups/' . $groupId . '/');
+            if ($response->ok()) {
+                $data = $response->json();
+                return $data['name'] ?? '未知分组';
+            }
+            return '其他';
+        });
+    }
+    
+    /**
+     * 按类别分组技能
+     */
+    private function groupSkillsByCategory($skills)
+    {
+        $grouped = [];
+        
+        foreach ($skills as $skill) {
+            $groupName = $skill['group_name'] ?? '其他';
+            $groupId = $skill['group_id'] ?? 0;
+            
+            if (!isset($grouped[$groupId])) {
+                $grouped[$groupId] = [
+                    'group_id' => $groupId,
+                    'group_name' => $groupName,
+                    'skills' => [],
+                ];
+            }
+            
+            $grouped[$groupId]['skills'][] = $skill;
+        }
+        
+        // 按分组名称排序
+        uasort($grouped, function($a, $b) {
+            return strcmp($a['group_name'], $b['group_name']);
+        });
+        
+        return $grouped;
     }
     
     /**

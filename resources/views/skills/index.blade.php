@@ -19,6 +19,19 @@
         .pulse {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary ~ * {
+            animation: sweep .3s ease-in-out;
+        }
+        @keyframes sweep {
+            0%    {opacity: 0; transform: translateY(-10px)}
+            100%  {opacity: 1; transform: translateY(0)}
+        }
     </style>
 </head>
 <body class="eve-bg min-h-screen text-white">
@@ -97,9 +110,6 @@
                                         </span>
                                     </div>
                                     <div class="text-sm text-blue-300 mt-1">
-                                        技能 ID: {{ $queueItem['skill_id'] ?? 'N/A' }}
-                                    </div>
-                                    <div class="text-sm text-blue-300 mt-1">
                                         等级：{{ $queueItem['finished_level'] ?? 0 }} / 5
                                     </div>
                                 </div>
@@ -170,37 +180,60 @@
             @endif
         </div>
 
-        <!-- 技能列表 -->
-        @if($skillsData && !empty($skillsData['skills']))
+        <!-- 已学技能（按分组展示） -->
+        @if(isset($skillsData['skills_by_group']) && !empty($skillsData['skills_by_group']))
         <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 eve-glow">
-            <h2 class="text-2xl font-semibold mb-6">📖 已学技能</h2>
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                @foreach(array_slice($skillsData['skills'], 0, 20) as $skill)
-                    <div class="bg-white/5 rounded-lg p-4">
-                        <div class="mb-2">
-                            <div class="font-semibold text-white">
-                                {{ $skill['skill_name'] ?? '未知技能' }}
+            <h2 class="text-2xl font-semibold mb-6">📖 已学技能（按分类展示）</h2>
+            
+            <div class="space-y-3">
+                @foreach($skillsData['skills_by_group'] as $group)
+                    <details class="bg-white/5 rounded-lg overflow-hidden">
+                        <summary class="px-4 py-3 bg-white/10 cursor-pointer hover:bg-white/20 transition-colors flex justify-between items-center">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-lg font-semibold">📚 {{ $group['group_name'] }}</span>
+                                <span class="text-sm text-blue-300">({{ count($group['skills']) }} 个技能)</span>
                             </div>
-                            <div class="text-xs text-blue-300 mt-1">
-                                ID: {{ $skill['skill_id'] ?? 'N/A' }}
+                            <span class="text-blue-400 transform transition-transform duration-200">▼</span>
+                        </summary>
+                        <div class="p-4">
+                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                @foreach($group['skills'] as $skill)
+                                    <div class="bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors">
+                                        <div class="mb-2">
+                                            <div class="font-semibold text-white text-sm">
+                                                {{ $skill['skill_name'] ?? '未知技能' }}
+                                            </div>
+                                            <div class="text-xs text-blue-400 mt-1">
+                                                等级 {{ $skill['active_level'] ?? 0 }} / 5
+                                            </div>
+                                        </div>
+                                        <div class="flex justify-between items-center text-xs">
+                                            <span class="text-blue-300">
+                                                {{ number_format($skill['skill_points_in_skill'] ?? 0) }} SP
+                                            </span>
+                                            @if($skill['active_level'] == 5)
+                                                <span class="text-green-400">✅ 满级</span>
+                                            @endif
+                                        </div>
+                                        <!-- 技能等级进度条 -->
+                                        @php
+                                            $spForLevel = [0, 0, 250, 1414, 8000, 45255];
+                                            $currentLevel = $skill['active_level'] ?? 0;
+                                            $currentSP = $skill['skill_points_in_skill'] ?? 0;
+                                            $nextLevelSP = $spForLevel[$currentLevel + 1] ?? $currentSP;
+                                            $prevLevelSP = $spForLevel[$currentLevel] ?? 0;
+                                            $progress = $currentLevel >= 5 ? 100 : (($currentSP - $prevLevelSP) / ($nextLevelSP - $prevLevelSP)) * 100;
+                                        @endphp
+                                        <div class="mt-2 w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                                            <div class="bg-blue-500 h-1.5 rounded-full" style="width: {{ min(100, $progress) }}%"></div>
+                                        </div>
+                                    </div>
+                                @endforeach
                             </div>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs bg-blue-600 px-2 py-1 rounded">
-                                等级 {{ $skill['active_level'] ?? 0 }}
-                            </span>
-                            <span class="text-sm text-blue-300">
-                                {{ number_format($skill['skill_points_in_skill'] ?? 0) }} SP
-                            </span>
-                        </div>
-                    </div>
+                    </details>
                 @endforeach
             </div>
-            @if(count($skillsData['skills']) > 20)
-                <div class="text-center mt-4 text-blue-300">
-                    还有 {{ count($skillsData['skills']) - 20 }} 个技能...
-                </div>
-            @endif
         </div>
         @endif
     </div>
@@ -211,6 +244,19 @@
         setTimeout(function() {
             location.reload();
         }, 60000);
+        
+        // 为 details 添加展开/收起动画
+        document.querySelectorAll('details').forEach(detail => {
+            detail.addEventListener('toggle', () => {
+                const summary = detail.querySelector('summary');
+                const arrow = summary.querySelector('span:last-child');
+                if (detail.open) {
+                    arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
     </script>
 </body>
 </html>
