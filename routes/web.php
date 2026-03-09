@@ -18,8 +18,8 @@ Route::get('/', function () {
 
 // OAuth2 路由
 Route::prefix('auth')->group(function () {
-    Route::get('/login', [AuthController::class, 'login'])->name('auth.login');
-    Route::get('/callback', [AuthController::class, 'callback'])->name('auth.callback');
+    Route::get('/guide', [AuthController::class, 'guide'])->name('auth.guide');
+    Route::post('/callback', [AuthController::class, 'callback'])->name('auth.callback');
     Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 });
 

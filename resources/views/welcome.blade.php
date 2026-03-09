@@ -46,12 +46,12 @@
 
                     <!-- 登录按钮 -->
                     <div class="text-center">
-                        <a href="{{ route('auth.login') }}" 
+                        <a href="{{ route('auth.guide') }}" 
                            class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg transition-all eve-glow hover:scale-105">
                             🔐 使用 EVE 账号登录
                         </a>
                         <p class="text-xs text-blue-300 mt-4">
-                            点击后将跳转到网易通行证授权页面
+                            点击后进入授权引导页面
                         </p>
                     </div>
 
