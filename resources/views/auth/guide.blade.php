@@ -30,7 +30,7 @@
                 <div class="space-y-6">
                     <!-- 步骤说明 -->
                     <div class="text-center space-y-3">
-                        <p class="text-blue-100">点击下方按钮，跳转到授权页面：</p>
+                        <p class="text-blue-100">点击下方按钮，在新窗口完成授权：</p>
                         
                         <div class="flex items-center justify-center space-x-4 text-sm text-blue-300">
                             <span class="flex items-center">
@@ -55,22 +55,28 @@
                             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg transition-all eve-glow hover:scale-105 text-lg">
                         🔗 点击前往授权页面
                     </button>
+                    
+                    <!-- 等待提示 -->
+                    <div id="waitingTip" class="hidden text-center">
+                        <p class="text-yellow-300">⏳ 等待授权完成...</p>
+                        <p class="text-sm text-blue-300 mt-2">授权完成后请关闭新窗口，返回此页面填写授权码</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- 手动输入 Code（备用方案） -->
+            <!-- 手动输入 Code -->
             <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 eve-glow">
-                <h2 class="text-xl font-semibold mb-4">📋 或者手动输入授权码</h2>
+                <h2 class="text-xl font-semibold mb-4">📋 填写授权码</h2>
                 
                 <p class="text-sm text-blue-100 mb-4">
-                    如果自动授权失败，可以从授权后的 URL 中复制授权码粘贴到这里：
+                    授权完成后，从新窗口的地址栏复制授权码粘贴到这里：
                 </p>
                 
                 <form action="{{ route('auth.callback') }}" method="POST" class="space-y-4">
                     @csrf
                     <div>
                         <label class="block text-sm text-blue-300 mb-2">授权码（code）：</label>
-                        <input type="text" name="code" 
+                        <input type="text" name="code" id="codeInput"
                                placeholder="粘贴授权码（不包含 code=）"
                                class="w-full bg-black/30 border border-blue-500/50 rounded-lg p-3 text-white font-mono" />
                         <p class="text-xs text-blue-400 mt-2">
@@ -148,6 +154,9 @@
     </div>
 
     <script>
+        let authWindow = null;
+        let checkInterval = null;
+        
         function openAuth() {
             // 生成随机 state
             const state = Array.from(crypto.getRandomValues(new Uint8Array(16)), 
@@ -156,8 +165,7 @@
             // 保存到 sessionStorage
             sessionStorage.setItem('esi_state', state);
             
-            // 构建授权 URL（使用 URLSearchParams 确保正确编码）
-            const baseUrl = 'https://login.evepc.163.com/v2/oauth/authorize';
+            // 使用 URLSearchParams 构建 URL（自动正确编码）
             const params = new URLSearchParams();
             params.append('response_type', 'code');
             params.append('client_id', 'bc90aa496a404724a93f41b4f4e97761');
@@ -166,10 +174,30 @@
             params.append('scope', getScopes());
             params.append('device_id', 'tus');
             
-            const authUrl = `${baseUrl}?${params.toString()}`;
+            const authUrl = `https://login.evepc.163.com/v2/oauth/authorize?${params.toString()}`;
             
-            // 直接跳转到授权页面
-            window.location.href = authUrl;
+            // 在新窗口打开授权页面
+            authWindow = window.open(authUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+            
+            // 检查窗口是否关闭
+            if (authWindow) {
+                // 显示等待提示
+                document.getElementById('waitingTip').classList.remove('hidden');
+                
+                // 定期检查窗口是否关闭
+                checkInterval = setInterval(function() {
+                    if (authWindow && authWindow.closed) {
+                        clearInterval(checkInterval);
+                        document.getElementById('waitingTip').innerHTML = 
+                            '<p class="text-green-300">✅ 授权窗口已关闭，请从刚才的窗口地址栏复制授权码填写到下方</p>';
+                        
+                        // 聚焦到输入框
+                        document.getElementById('codeInput').focus();
+                    }
+                }, 1000);
+            } else {
+                alert('浏览器阻止了弹出窗口，请允许弹出窗口后重试');
+            }
         }
         
         function getScopes() {
