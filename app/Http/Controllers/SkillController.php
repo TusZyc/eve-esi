@@ -89,79 +89,21 @@ class SkillController extends Controller
     }
     
     /**
-     * 获取技能分组信息
+     * 获取技能分组信息（简化版：先不显示分组，只显示技能列表）
      */
     private function getSkillGroups($skillIds)
     {
-        // 缓存技能分组信息
-        return Cache::remember('skill_groups_' . md5(implode(',', $skillIds)), 86400, function() use ($skillIds) {
-            $groups = [];
-            
-            // 批量获取技能详细信息（包含 group_id）
-            $response = Http::get(config('esi.base_url') . 'universe/types/', [
-                'ids' => $skillIds
-            ]);
-            
-            if ($response->ok()) {
-                $types = $response->json();
-                foreach ($types as $type) {
-                    $groupId = $type['group_id'] ?? 0;
-                    // 获取分组名称
-                    $groupName = $this->getGroupname($groupId);
-                    $groups[(int) $type['type_id']] = [
-                        'group_id' => $groupId,
-                        'group_name' => $groupName,
-                    ];
-                }
-            }
-            
-            return $groups;
-        });
+        // 暂时返回空数组，技能直接显示
+        return [];
     }
     
     /**
-     * 获取分组名称
-     */
-    private function getGroupname($groupId)
-    {
-        return Cache::remember('group_name_' . $groupId, 604800, function() use ($groupId) {
-            $response = Http::get(config('esi.base_url') . 'universe/groups/' . $groupId . '/');
-            if ($response->ok()) {
-                $data = $response->json();
-                return $data['name'] ?? '未知分组';
-            }
-            return '其他';
-        });
-    }
-    
-    /**
-     * 按类别分组技能
+     * 按类别分组技能（简化版）
      */
     private function groupSkillsByCategory($skills)
     {
-        $grouped = [];
-        
-        foreach ($skills as $skill) {
-            $groupName = $skill['group_name'] ?? '其他';
-            $groupId = $skill['group_id'] ?? 0;
-            
-            if (!isset($grouped[$groupId])) {
-                $grouped[$groupId] = [
-                    'group_id' => $groupId,
-                    'group_name' => $groupName,
-                    'skills' => [],
-                ];
-            }
-            
-            $grouped[$groupId]['skills'][] = $skill;
-        }
-        
-        // 按分组名称排序
-        uasort($grouped, function($a, $b) {
-            return strcmp($a['group_name'], $b['group_name']);
-        });
-        
-        return $grouped;
+        // 暂时不分组，直接返回所有技能
+        return ['all' => ['group_id' => 0, 'group_name' => '所有技能', 'skills' => $skills]];
     }
     
     /**
