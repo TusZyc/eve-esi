@@ -158,27 +158,27 @@
         let checkInterval = null;
         
         function openAuth() {
-            // 生成随机 state（和 3V 一样的格式）
-            const state = Array.from(crypto.getRandomValues(new Uint8Array(16)), 
+            // 生成随机 state（3V 使用短 state，5 个字符）
+            const state = Array.from(crypto.getRandomValues(new Uint8Array(3)), 
                 b => b.toString(16).padStart(2, '0')).join('');
             
             // 保存到 sessionStorage
             sessionStorage.setItem('esi_state', state);
             
-            // 使用 3V 完全一样的 URL 格式（字符串拼接，固定参数顺序）
+            // 使用 3V 完全一样的 URL 格式
             const clientId = 'bc90aa496a404724a93f41b4f4e97761';
             const redirectUri = 'https://ali-esi.evepc.163.com/ui/oauth2-redirect.html';
             const deviceId = 'tus';
             const scopes = getScopes();
             
-            // 按照 3V 的参数顺序构建 URL
+            // 按照 3V 的参数顺序构建 URL（scope 不编码空格！）
             const authUrl = 'https://login.evepc.163.com/v2/oauth/authorize' +
                 '?response_type=code' +
                 '&client_id=' + clientId +
                 '&redirect_uri=' + encodeURIComponent(redirectUri) +
                 '&device_id=' + deviceId +
                 '&state=' + state +
-                '&scope=' + encodeURIComponent(scopes);
+                '&scope=' + scopes;  // 不要 encodeURIComponent！
             
             // 在新窗口打开授权页面
             authWindow = window.open(authUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
