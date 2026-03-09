@@ -12,13 +12,6 @@
         .eve-glow {
             box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
     </style>
 </head>
 <body class="eve-bg min-h-screen text-white">
@@ -58,17 +51,10 @@
                     </div>
                     
                     <!-- 授权按钮 -->
-                    <button onclick="openAuthWindow()" 
-                            id="authButton"
+                    <button onclick="openAuth()" 
                             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg transition-all eve-glow hover:scale-105 text-lg">
                         🔗 点击前往授权页面
                     </button>
-                    
-                    <!-- 等待提示 -->
-                    <div id="waitingTip" class="hidden text-center">
-                        <p class="text-yellow-300 pulse">⏳ 等待授权完成...</p>
-                        <p class="text-sm text-blue-300 mt-2">授权完成后请关闭新窗口，返回此页面</p>
-                    </div>
                 </div>
             </div>
 
@@ -161,19 +147,42 @@
         </footer>
     </div>
 
+    <!-- 隐藏的表单，用于提交授权 -->
+    <form id="authForm" action="{{ route('auth.callback') }}" method="POST" style="display:none;">
+        @csrf
+        <input type="hidden" name="callback_url" id="callbackUrlInput" />
+    </form>
+
     <script>
-        let authWindow = null;
-        let checkInterval = null;
-        
-        function openAuthWindow() {
-            // 配置
-            const clientId = 'bc90aa496a404724a93f41b4f4e97761';
-            const redirectUri = 'https://ali-esi.evepc.163.com/ui/oauth2-redirect.html';
-            const state = generateRandomState();
-            const deviceId = 'tus';
+        function openAuth() {
+            // 生成随机 state
+            const state = Array.from(crypto.getRandomValues(new Uint8Array(16)), 
+                b => b.toString(16).padStart(2, '0')).join('');
             
-            // 完整的权限列表
-            const scopes = [
+            // 保存到 sessionStorage
+            sessionStorage.setItem('esi_state', state);
+            
+            // 构建授权 URL（和 3V 一样的格式）
+            const authUrl = 'https://login.evepc.163.com/v2/oauth/authorize?' +
+                'response_type=code&' +
+                'client_id=bc90aa496a404724a93f41b4f4e97761&' +
+                'redirect_uri=' + encodeURIComponent('https://ali-esi.evepc.163.com/ui/oauth2-redirect.html') + '&' +
+                'state=' + state + '&' +
+                'scope=' + encodeURIComponent(getScopes()) + '&' +
+                'device_id=tus';
+            
+            // 打开新窗口
+            const newWindow = window.open(authUrl, '_blank', 'width=800,height=600');
+            
+            // 如果浏览器阻止弹出，提示用户
+            if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                alert('浏览器阻止了弹出窗口，请允许弹出窗口后重试，或使用下方的手动输入授权码功能');
+            }
+        }
+        
+        function getScopes() {
+            // 完整的 70+ 个权限
+            return [
                 'esi-calendar.respond_calendar_events.v1',
                 'esi-calendar.read_calendar_events.v1',
                 'esi-location.read_location.v1',
@@ -239,48 +248,7 @@
                 'esi-industry.read_character_mining.v1',
                 'esi-industry.read_corporation_mining.v1',
                 'esi-characters.read_titles.v1',
-            ];
-            
-            // 构建授权 URL（使用之前正常的参数顺序）
-            const authUrl = `https://login.evepc.163.com/v2/oauth/authorize?` +
-                `response_type=code&` +
-                `client_id=${clientId}&` +
-                `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-                `state=${state}&` +
-                `scope=${encodeURIComponent(scopes.join(' '))}&` +
-                `device_id=${deviceId}`;
-            
-            // 保存 state 到 sessionStorage
-            sessionStorage.setItem('esi_state', state);
-            
-            // 打开新窗口
-            authWindow = window.open(
-                authUrl, 
-                'EVE 授权', 
-                'width=800,height=600,scrollbars=yes,resizable=yes'
-            );
-            
-            // 显示等待提示
-            document.getElementById('waitingTip').classList.remove('hidden');
-            document.getElementById('authButton').disabled = true;
-            document.getElementById('authButton').classList.add('opacity-50', 'cursor-not-allowed');
-            
-            // 监听窗口关闭
-            checkInterval = setInterval(() => {
-                if (authWindow && authWindow.closed) {
-                    clearInterval(checkInterval);
-                    document.getElementById('waitingTip').innerHTML = 
-                        '<p class="text-green-300">✅ 授权窗口已关闭，如果您已完成授权，请刷新页面查看状态</p>';
-                    document.getElementById('authButton').disabled = false;
-                    document.getElementById('authButton').classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            }, 1000);
-        }
-        
-        function generateRandomState() {
-            const array = new Uint8Array(16);
-            crypto.getRandomValues(array);
-            return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+            ].join(' ');
         }
     </script>
 </body>
