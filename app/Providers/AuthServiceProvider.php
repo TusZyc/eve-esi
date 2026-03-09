@@ -28,4 +28,12 @@ class AuthServiceProvider extends ServiceProvider
     {
         return route('auth.guide');
     }
+    
+    /**
+     * Redirect users to the authentication guide when not authenticated.
+     */
+    public static function redirectTo(): string
+    {
+        return route('auth.guide');
+    }
 }
