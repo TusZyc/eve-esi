@@ -31,8 +31,8 @@ class AuthController extends Controller
     {
         Log::info('=== OAuth2 授权开始 ===');
         
-        // 获取用户粘贴的 URL
-        $callbackUrl = $request->input('callback_url');
+        // 获取用户粘贴的 URL（GET 参数）
+        $callbackUrl = $request->query('callback_url');
         
         if (empty($callbackUrl)) {
             return redirect()->route('auth.guide')

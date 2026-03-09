@@ -127,9 +127,7 @@
                     授权完成后，从新窗口的地址栏复制授权码粘贴到这里：
                 </p>
                 
-                <form action="{{ route('auth.callback') }}" method="POST" class="space-y-4">
-                    @csrf
-                    <input type="hidden" name="esi_state" id="esiStateInput" value="{{ session('esi_state') }}" />
+                <form action="{{ route('auth.callback') }}" method="GET" class="space-y-4">
                     <div>
                         <label class="block text-sm text-blue-300 mb-2">授权码（code）：</label>
                         <input type="text" name="code" id="codeInput"
