@@ -19,7 +19,7 @@
         <!-- 头部 -->
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold mb-2 eve-glow">🔐 EVE ESI 授权</h1>
-            <p class="text-blue-200">绑定你的 EVE 角色</p>
+            <p class="text-blue-200">绑定你的 EVE 角色（Authorization Code 模式）</p>
         </header>
 
         <main class="max-w-3xl mx-auto">
@@ -47,9 +47,9 @@
                 </div>
             </div>
 
-            <!-- 步骤 2：授权并返回 Token -->
+            <!-- 步骤 2：授权并返回 Code -->
             <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 eve-glow">
-                <h2 class="text-xl font-semibold mb-4">📋 第 2 步：授权并返回 Token</h2>
+                <h2 class="text-xl font-semibold mb-4">📋 第 2 步：授权并返回 Code</h2>
                 
                 <div class="space-y-4">
                     <ol class="list-decimal list-inside space-y-2 text-blue-100">
@@ -57,7 +57,7 @@
                         <li>登录网易通行证</li>
                         <li>选择 EVE 角色</li>
                         <li>确认授权</li>
-                        <li>复制浏览器地址栏的完整 URL</li>
+                        <li>复制浏览器地址栏的<strong>完整 URL</strong></li>
                         <li>粘贴到下面的输入框</li>
                     </ol>
                     
@@ -66,8 +66,11 @@
                         <div>
                             <label class="block text-sm text-blue-300 mb-2">粘贴授权后的完整 URL：</label>
                             <textarea name="callback_url" id="callbackUrl" required 
-                                      placeholder="https://esi.evepc.163.com/ui/oauth2-redirect.html#access_token=..."
+                                      placeholder="https://esi.evepc.163.com/ui/oauth2-redirect.html?code=YOUR_CODE&state=YOUR_STATE"
                                       class="w-full bg-black/30 border border-blue-500/50 rounded-lg p-3 text-white font-mono h-32"></textarea>
+                            <p class="text-xs text-blue-400 mt-2">
+                                💡 URL 应该包含 <code class="text-yellow-400">?code=</code> 参数
+                            </p>
                         </div>
                         
                         <button type="submit" 
@@ -99,9 +102,13 @@
                         <span>钱包余额</span>
                     </div>
                 </div>
-                <p class="text-xs text-blue-300 mt-4">
-                    ⚠️ Token 有效期约 20 分钟，过期后需重新授权
-                </p>
+                <div class="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 mt-4">
+                    <p class="text-sm text-blue-200">
+                        <strong>✅ Authorization Code 模式优势：</strong><br>
+                        可获得 Refresh Token，永久有效（约 1 个月不使用会被清理）<br>
+                        相比 Implicit 模式更安全、更持久
+                    </p>
+                </div>
             </div>
         </main>
 
@@ -113,10 +120,13 @@
 
     <script>
         function generateAuthUrl() {
-            // 配置
+            // 配置 - 使用 3V 模式的官方 Client ID
             const clientId = 'bc90aa496a404724a93f41b4f4e97761';
             const redirectUri = 'https://esi.evepc.163.com/ui/oauth2-redirect.html';
             const state = generateRandomState();
+            const deviceId = generateDeviceId();
+            
+            // 权限列表（最多 4 个）
             const scopes = [
                 'esi-skills.read_skills.v1',
                 'esi-skills.read_skillqueue.v1',
@@ -124,21 +134,21 @@
                 'esi-wallet.read_character_wallet.v1'
             ];
             
-            // 构建 URL
+            // 构建授权 URL（Authorization Code 模式：response_type=code）
             const authUrl = `https://login.evepc.163.com/v2/oauth/authorize?` +
-                `response_type=token&` +
+                `response_type=code&` +
                 `client_id=${clientId}&` +
                 `redirect_uri=${encodeURIComponent(redirectUri)}&` +
                 `state=${state}&` +
                 `scope=${encodeURIComponent(scopes.join(' '))}&` +
                 `realm=eve&` +
-                `device_id=${generateDeviceId()}`;
+                `device_id=${deviceId}`;
             
             // 显示结果
             document.getElementById('authUrl').value = authUrl;
             document.getElementById('authUrlContainer').classList.remove('hidden');
             
-            // 保存 state 到 sessionStorage
+            // 保存 state 到 sessionStorage（用于验证回调）
             sessionStorage.setItem('esi_state', state);
         }
         
@@ -149,6 +159,7 @@
         }
         
         function generateDeviceId() {
+            // 生成一个固定的 Device ID（可以用项目名 + 随机数）
             return '12345678-1234-1234-1234-123456789012';
         }
         

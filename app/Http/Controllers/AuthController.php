@@ -34,16 +34,42 @@ class AuthController extends Controller
                 ->with('error', '请提供授权后的完整 URL');
         }
         
-        // 从 URL 中提取 Token
-        $tokenData = $this->extractTokenFromUrl($callbackUrl);
+        // 从 URL 中提取 code 和 state
+        $code = $this->extractCodeFromUrl($callbackUrl);
+        $state = $this->extractStateFromUrl($callbackUrl);
         
-        if (empty($tokenData['access_token'])) {
-            Log::error('无法从 URL 中提取 Token', ['url' => $callbackUrl]);
+        if (empty($code)) {
+            Log::error('无法从 URL 中提取 code', ['url' => $callbackUrl]);
             return redirect()->route('auth.guide')
-                ->with('error', '无法从 URL 中提取 Access Token，请检查 URL 是否正确');
+                ->with('error', '无法从 URL 中提取授权码（code），请检查 URL 是否正确');
         }
         
-        Log::info('Token 提取成功', ['expires_in' => $tokenData['expires_in'] ?? 'N/A']);
+        // 验证 state（防止 CSRF）
+        $savedState = session('esi_state');
+        if ($state && $savedState && $state !== $savedState) {
+            Log::error('State 验证失败', [
+                'expected' => $savedState,
+                'received' => $state,
+            ]);
+            return redirect()->route('auth.guide')
+                ->with('error', '授权验证失败（state 不匹配），请重新授权');
+        }
+        
+        Log::info('Code 提取成功', ['code' => substr($code, 0, 10) . '...']);
+        
+        // 用 code 换取 Token
+        $tokenData = $this->getAccessToken($code);
+        
+        if (empty($tokenData['access_token'])) {
+            Log::error('Token 换取失败', ['response' => $tokenData]);
+            return redirect()->route('auth.guide')
+                ->with('error', 'Token 换取失败：' . ($tokenData['error_description'] ?? $tokenData['error'] ?? '未知错误'));
+        }
+        
+        Log::info('Token 换取成功', [
+            'expires_in' => $tokenData['expires_in'] ?? 'N/A',
+            'has_refresh' => !empty($tokenData['refresh_token']),
+        ]);
         
         // 使用 Access Token 获取角色信息
         $characterResponse = Http::withToken($tokenData['access_token'])
@@ -71,10 +97,10 @@ class AuthController extends Controller
             ]
         );
         
-        // 更新 Token 信息
+        // 更新 Token 信息（包括 Refresh Token）
         $user->update([
             'access_token' => $tokenData['access_token'],
-            'refresh_token' => null, // Implicit 模式没有 Refresh Token
+            'refresh_token' => $tokenData['refresh_token'] ?? null,
             'token_expires_at' => now()->addSeconds($tokenData['expires_in'] ?? 1200),
             'corporation_id' => $characterData['CorporationID'] ?? null,
             'alliance_id' => $characterData['AllianceID'] ?? null,
@@ -90,37 +116,101 @@ class AuthController extends Controller
     }
     
     /**
-     * 从回调 URL 中提取 Token
+     * 从回调 URL 中提取 code 参数
      */
-    private function extractTokenFromUrl($url)
+    private function extractCodeFromUrl($url)
     {
-        $tokenData = [];
+        $queryParams = [];
+        parse_str(parse_url($url, PHP_URL_QUERY), $queryParams);
+        return $queryParams['code'] ?? null;
+    }
+    
+    /**
+     * 从回调 URL 中提取 state 参数
+     */
+    private function extractStateFromUrl($url)
+    {
+        $queryParams = [];
+        parse_str(parse_url($url, PHP_URL_QUERY), $queryParams);
+        return $queryParams['state'] ?? null;
+    }
+    
+    /**
+     * 用 authorization code 换取 Access Token
+     */
+    private function getAccessToken($code)
+    {
+        $tokenUrl = config('esi.oauth_url') . 'token';
+        $clientId = config('esi.client_id');
         
-        // Implicit 模式：URL fragment (#access_token=xxx)
-        if (strpos($url, '#access_token=') !== false) {
-            $fragment = parse_url($url, PHP_URL_FRAGMENT);
-            if ($fragment) {
-                parse_str($fragment, $params);
-                $tokenData = [
-                    'access_token' => $params['access_token'] ?? null,
-                    'token_type' => $params['token_type'] ?? 'Bearer',
-                    'expires_in' => isset($params['expires_in']) ? (int) $params['expires_in'] : 1200,
-                    'scope' => $params['scope'] ?? null,
-                ];
-            }
-        }
+        Log::info('请求 Token', [
+            'url' => $tokenUrl,
+            'client_id' => $clientId,
+        ]);
         
-        // Authorization Code 模式：?code=xxx
-        if (strpos($url, '?code=') !== false || strpos($url, '&code=') !== false) {
-            $queryParams = [];
-            parse_str(parse_url($url, PHP_URL_QUERY), $queryParams);
-            $tokenData = [
-                'code' => $queryParams['code'] ?? null,
-                'state' => $queryParams['state'] ?? null,
+        // 发送 POST 请求（不需要 Client Secret，因为是公开客户端）
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/x-www-form-urlencoded',
+            'Accept' => 'application/json',
+        ])->post($tokenUrl, [
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'client_id' => $clientId,
+        ]);
+        
+        Log::info('Token 响应', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+        
+        if ($response->failed()) {
+            return [
+                'error' => 'Token request failed',
+                'error_description' => $response->body(),
             ];
         }
         
-        return $tokenData;
+        return $response->json();
+    }
+    
+    /**
+     * 用 Refresh Token 刷新 Access Token
+     */
+    public function refreshToken(User $user)
+    {
+        if (empty($user->refresh_token)) {
+            Log::warning('没有 Refresh Token', ['user_id' => $user->id]);
+            return false;
+        }
+        
+        $tokenUrl = config('esi.oauth_url') . 'token';
+        $clientId = config('esi.client_id');
+        
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/x-www-form-urlencoded',
+            'Accept' => 'application/json',
+        ])->post($tokenUrl, [
+            'grant_type' => 'refresh_token',
+            'refresh_token' => $user->refresh_token,
+            'client_id' => $clientId,
+        ]);
+        
+        if ($response->ok()) {
+            $tokenData = $response->json();
+            $user->update([
+                'access_token' => $tokenData['access_token'],
+                'refresh_token' => $tokenData['refresh_token'] ?? $user->refresh_token,
+                'token_expires_at' => now()->addSeconds($tokenData['expires_in'] ?? 1200),
+            ]);
+            Log::info('Token 刷新成功', ['user_id' => $user->id]);
+            return true;
+        }
+        
+        Log::error('Token 刷新失败', [
+            'user_id' => $user->id,
+            'error' => $response->body(),
+        ]);
+        return false;
     }
     
     /**
