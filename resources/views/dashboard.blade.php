@@ -253,15 +253,15 @@
                     
                     container.innerHTML = `
                         <div class="grid grid-cols-3 gap-4">
-                            <div>
+                            <div class="text-center">
                                 <div class="text-sm text-blue-200">角色</div>
                                 <div class="text-lg">${data.character_name} <span class="text-sm text-blue-400">(ID: ${data.character_id})</span></div>
                             </div>
-                            <div>
+                            <div class="text-center">
                                 <div class="text-sm text-blue-200">军团</div>
                                 <div class="text-lg">${data.corporation_name} <span class="text-sm text-blue-400">(ID: ${data.corporation_id})</span></div>
                             </div>
-                            <div>
+                            <div class="text-center">
                                 <div class="text-sm text-blue-200">联盟</div>
                                 <div class="text-lg">${allianceDisplay}</div>
                             </div>
