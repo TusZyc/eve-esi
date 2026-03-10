@@ -133,6 +133,91 @@
         <!-- 技能队列 -->
         <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 eve-glow">
             <h2 class="text-xl font-semibold mb-4">⏳ 技能队列</h2>
+            
+            @if($skillQueue && count($skillQueue) > 0)
+            <div class="space-y-3">
+                @foreach(array_slice($skillQueue, 0, 5) as $index => $queueItem)
+                <div class="bg-white/5 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <div>
+                            <span class="font-medium">
+                                {{ $index + 1 }}. {{ $queueItem['skill_name'] ?? '未知技能' }}
+                            </span>
+                            <span class="text-xs text-blue-300 ml-2">
+                                (ID: {{ $queueItem['skill_id'] ?? 'N/A' }})
+                            </span>
+                        </div>
+                        <span class="text-sm text-blue-200">
+                            等级 {{ $queueItem['finished_level'] ?? 0 }}
+                        </span>
+                    </div>
+                    <div class="w-full bg-white/10 rounded-full h-2">
+                        @php
+                            $progress = 0;
+                            if (isset($queueItem['progress']) && isset($queueItem['completion'])) {
+                                $progress = $queueItem['progress'] / $queueItem['completion'] * 100;
+                            }
+                        @endphp
+                        <div class="bg-blue-500 h-2 rounded-full" style="width: {{ $progress }}%"></div>
+                    </div>
+                    <div class="text-xs text-blue-300 mt-1">
+                        进度：{{ number_format($progress, 1) }}%
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            @elseif($skillQueueError)
+            <div class="text-center py-8">
+                <div class="text-5xl mb-4">⏳</div>
+                <p class="text-blue-300 text-lg mb-2">
+                    @if($skillQueueError === 'connection_timeout')
+                        无法获取技能队列
+                    @else
+                        技能队列暂时不可用
+                    @endif
+                </p>
+                <p class="text-blue-400 text-sm">
+                    @if($serverStatusError === 'connection_timeout')
+                        服务器重启期间，技能队列数据可能无法访问
+                    @else
+                        请稍后再试
+                    @endif
+                </p>
+            </div>
+            @else
+            <div class="text-center py-8">
+                <div class="text-5xl mb-4">⏳</div>
+                <p class="text-blue-300">技能队列为空</p>
+                <p class="text-blue-400 text-sm mt-2">当前没有正在训练的技能</p>
+            </div>
+            @endif
+        </div>
+
+        <!-- 快捷操作 -->
+        <div class="grid md:grid-cols-4 gap-4 mt-8">
+            <a href="{{ route('skills.index') }}" 
+               class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow">
+                <div class="text-3xl mb-2">📚</div>
+                <div class="font-semibold">技能队列</div>
+            </a>
+            <a href="{{ route('assets.index') }}" 
+               class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow">
+                <div class="text-3xl mb-2">📦</div>
+                <div class="font-semibold">我的资产</div>
+            </a>
+            <a href="{{ route('characters.index') }}" 
+               class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow">
+                <div class="text-3xl mb-2">👥</div>
+                <div class="font-semibold">角色管理</div>
+            </a>
+            <a href="{{ route('wallet.index') }}" 
+               class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow opacity-50 cursor-not-allowed"
+               title="即将推出">
+                <div class="text-3xl mb-2">💰</div>
+                <div class="font-semibold">钱包查询</div>
+                <div class="text-xs text-blue-400 mt-1">开发中</div>
+            </a>
+        </div>
             <div id="skill-queue-content">
                 <!-- 骨架屏 -->
                 <div class="space-y-3">

@@ -15,6 +15,19 @@
     </style>
 </head>
 <body class="eve-bg min-h-screen text-white">
+    @php
+        // 检查是否已登录
+        $isLoggedIn = Auth::check();
+    @endphp
+
+    @if($isLoggedIn)
+        {{-- 已登录：显示欢迎信息和快速入口 --}}
+        <script>
+            // 已登录用户自动跳转到 Dashboard
+            window.location.href = '{{ route("dashboard") }}';
+        </script>
+    @endif
+
     <div class="container mx-auto px-4 py-8">
         <!-- 头部 -->
         <header class="text-center mb-12">
