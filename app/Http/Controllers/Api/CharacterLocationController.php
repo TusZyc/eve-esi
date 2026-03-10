@@ -71,14 +71,12 @@ class CharacterLocationController extends Controller
                 'structure_id' => $structureId,
             ]);
             
-            // 查询名称
+            // 查询名称（先查询星系名称）
+            $names = [];
             $idsToQuery = [];
             if ($solarSystemId) $idsToQuery[] = $solarSystemId;
             if ($stationId) $idsToQuery[] = $stationId;
-            if ($structureId) $idsToQuery[] = $structureId;
-            
-            $names = [];
-            $locationDisplay = '未停靠';
+            // structure_id 可能超过 int32 范围，跳过查询
             
             if (!empty($idsToQuery)) {
                 $namesResponse = Http::timeout(10)
@@ -97,15 +95,14 @@ class CharacterLocationController extends Controller
             $solarSystemName = $names[$solarSystemId] ?? '未知星系';
             
             if ($stationId && isset($names[$stationId])) {
-                // 在空间站
+                // 在 NPC 空间站
                 $stationName = $names[$stationId];
                 // 简化空间站名称（去掉冗长部分）
                 $shortStationName = $this->shortenStationName($stationName);
                 $locationDisplay = "{$solarSystemName} - {$shortStationName}";
-            } elseif ($structureId && isset($names[$structureId])) {
-                // 在玩家建筑
-                $structureName = $names[$structureId];
-                $locationDisplay = "{$solarSystemName} - {$structureName}";
+            } elseif ($structureId) {
+                // 在玩家建筑（structure_id 太大无法查询名称）
+                $locationDisplay = "{$solarSystemName} - 玩家建筑";
             } else {
                 // 在太空中（未停靠）
                 $locationDisplay = "{$solarSystemName} - 未停靠";
