@@ -89,7 +89,7 @@
         <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 eve-glow">
             <h2 class="text-xl font-semibold mb-4">👤 角色信息</h2>
             <div id="character-info-content">
-                <div class="grid md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-4">
                     <!-- 骨架屏 -->
                     <div>
                         <div class="skeleton h-4 w-20 mb-2"></div>
@@ -252,7 +252,7 @@
                         : `<span class="text-blue-400">无联盟</span>`;
                     
                     container.innerHTML = `
-                        <div class="grid md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-3 gap-4">
                             <div>
                                 <div class="text-sm text-blue-200">角色</div>
                                 <div class="text-lg">${data.character_name} <span class="text-sm text-blue-400">(ID: ${data.character_id})</span></div>
