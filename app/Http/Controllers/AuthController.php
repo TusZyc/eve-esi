@@ -128,23 +128,45 @@ class AuthController extends Controller
         
         Log::info('请求 Token 端点：' . $tokenUrl);
         
-        // 国服 OAuth2 需要在 body 中传递 client_id
-        $response = Http::asForm()->post($tokenUrl, [
-            'grant_type' => 'authorization_code',
-            'code' => $code,
-            'client_id' => $clientId,
-        ]);
-        
-        Log::info('Token 响应状态：' . $response->status());
-        
-        if ($response->failed()) {
+        try {
+            // 国服 OAuth2 需要在 body 中传递 client_id
+            // 设置超时时间为 10 秒，避免服务器维护时卡住
+            $response = Http::timeout(10)
+                ->withHeaders([
+                    'Accept' => 'application/json',
+                ])
+                ->asForm()
+                ->post($tokenUrl, [
+                    'grant_type' => 'authorization_code',
+                    'code' => $code,
+                    'client_id' => $clientId,
+                ]);
+            
+            Log::info('Token 响应状态：' . $response->status());
+            
+            if ($response->failed()) {
+                Log::error('Token 换取失败：' . $response->body());
+                return [
+                    'error' => 'Token request failed',
+                    'error_description' => $response->body() ?: 'HTTP ' . $response->status(),
+                ];
+            }
+            
+            return $response->json();
+            
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Token 请求连接失败：' . $e->getMessage());
             return [
-                'error' => 'Token request failed',
-                'error_description' => $response->body(),
+                'error' => 'connection_error',
+                'error_description' => '无法连接到 EVE 授权服务器，可能是服务器维护或网络问题。请稍后再试。',
+            ];
+        } catch (\Exception $e) {
+            Log::error('Token 请求异常：' . $e->getMessage());
+            return [
+                'error' => 'unexpected_error',
+                'error_description' => '发生未知错误：' . $e->getMessage(),
             ];
         }
-        
-        return $response->json();
     }
     
     /**

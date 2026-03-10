@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AssetController;
+use App\Http\Controllers\Api\DashboardDataController;
+use App\Http\Controllers\Api\AssetDataController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\SkillController;
 
@@ -24,8 +27,16 @@ Route::prefix('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 });
 
-// 需要认证的路由
-Route::middleware(['auth'])->group(function () {
+// API 路由（异步数据加载）
+Route::middleware(['auth', 'eve.refresh'])->prefix('api/dashboard')->group(function () {
+    Route::get('/server-status', [DashboardDataController::class, 'serverStatus'])->name('api.dashboard.server-status');
+    Route::get('/skills', [DashboardDataController::class, 'skills'])->name('api.dashboard.skills');
+    Route::get('/skill-queue', [DashboardDataController::class, 'skillQueue'])->name('api.dashboard.skill-queue');
+    Route::get('/assets', [AssetDataController::class, 'index'])->name('api.dashboard.assets');
+});
+
+// 需要认证的路由（自动刷新 EVE Token）
+Route::middleware(['auth', 'eve.refresh'])->group(function () {
     // 仪表盘
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
@@ -42,7 +53,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/skills/queue', [CharacterController::class, 'skillQueue'])->name('skills.queue');
     
     // 资产
-    Route::get('/assets', [CharacterController::class, 'assets'])->name('assets.index');
+    Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
     
     // 钱包
     Route::get('/wallet', [CharacterController::class, 'wallet'])->name('wallet.index');

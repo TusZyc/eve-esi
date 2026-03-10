@@ -61,7 +61,7 @@ class User extends Authenticatable
     }
 
     /**
-     * 检查是否需要刷新 Token（提前 5 分钟刷新）
+     * 检查是否需要刷新 Token（提前 5 分钟刷新，避免使用时过期）
      */
     public function shouldRefreshToken(): bool
     {
@@ -69,6 +69,31 @@ class User extends Authenticatable
             return true;
         }
         
-        return $this->token_expires_at->subMinutes(5)->isPast();
+        // 提前 5 分钟刷新
+        return $this->token_expires_at->copy()->subMinutes(5)->isPast();
+    }
+    
+    /**
+     * 获取 Token 剩余有效时间（秒）
+     */
+    public function getTokenRemainingSeconds(): int
+    {
+        if (!$this->token_expires_at) {
+            return 0;
+        }
+        
+        return max(0, $this->token_expires_at->timestamp - time());
+    }
+    
+    /**
+     * 获取 Token 过期时间（格式化）
+     */
+    public function getTokenExpiryFormatted(): string
+    {
+        if (!$this->token_expires_at) {
+            return '未知';
+        }
+        
+        return $this->token_expires_at->format('Y-m-d H:i:s');
     }
 }

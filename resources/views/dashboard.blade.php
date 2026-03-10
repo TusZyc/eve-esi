@@ -12,6 +12,35 @@
         .eve-glow {
             box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
         }
+        
+        /* 骨架屏动画 */
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite;
+            border-radius: 4px;
+        }
+        .skeleton-circle {
+            border-radius: 50%;
+        }
+        
+        /* 加载动画 */
+        .loading-spinner {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top: 3px solid #60a5fa;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="eve-bg min-h-screen text-white">
@@ -35,31 +64,26 @@
 
     <div class="container mx-auto px-4 py-8">
         <!-- 服务器状态 -->
-        @if($serverStatus)
         <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 eve-glow">
             <h2 class="text-xl font-semibold mb-4">📡 服务器状态</h2>
-            <div class="grid md:grid-cols-3 gap-4">
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-green-400">
-                        {{ $serverStatus['players'] ?? 'N/A' }}
+            <div id="server-status-content">
+                <!-- 骨架屏 -->
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="text-center">
+                        <div class="skeleton h-10 w-24 mx-auto mb-2"></div>
+                        <div class="skeleton h-4 w-20 mx-auto"></div>
                     </div>
-                    <div class="text-sm text-blue-200">在线玩家</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-blue-400">
-                        {{ $serverStatus['server_version'] ?? 'N/A' }}
+                    <div class="text-center">
+                        <div class="skeleton h-10 w-32 mx-auto mb-2"></div>
+                        <div class="skeleton h-4 w-20 mx-auto"></div>
                     </div>
-                    <div class="text-sm text-blue-200">服务器版本</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-purple-400">
-                        {{ $serverStatus['vip'] ?? 'N/A' }}
+                    <div class="text-center">
+                        <div class="skeleton h-10 w-24 mx-auto mb-2"></div>
+                        <div class="skeleton h-4 w-20 mx-auto"></div>
                     </div>
-                    <div class="text-sm text-blue-200">VIP</div>
                 </div>
             </div>
         </div>
-        @endif
 
         <!-- 角色信息 -->
         <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 eve-glow">
@@ -85,88 +109,300 @@
         </div>
 
         <!-- 技能信息 -->
-        @if($skillsData)
         <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 eve-glow">
             <h2 class="text-xl font-semibold mb-4">📚 技能信息</h2>
-            <div class="grid md:grid-cols-3 gap-4">
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-yellow-400">
-                        {{ $skillsData['total_sp'] ?? 0 }}
+            <div id="skills-content">
+                <!-- 骨架屏 -->
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="text-center">
+                        <div class="skeleton h-10 w-24 mx-auto mb-2"></div>
+                        <div class="skeleton h-4 w-20 mx-auto"></div>
                     </div>
-                    <div class="text-sm text-blue-200">总技能点</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-green-400">
-                        {{ $skillsData['unallocated_sp'] ?? 0 }}
+                    <div class="text-center">
+                        <div class="skeleton h-10 w-24 mx-auto mb-2"></div>
+                        <div class="skeleton h-4 w-20 mx-auto"></div>
                     </div>
-                    <div class="text-sm text-blue-200">未分配技能点</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-blue-400">
-                        {{ count($skillsData['skills'] ?? []) }}
+                    <div class="text-center">
+                        <div class="skeleton h-10 w-24 mx-auto mb-2"></div>
+                        <div class="skeleton h-4 w-20 mx-auto"></div>
                     </div>
-                    <div class="text-sm text-blue-200">已学技能数</div>
                 </div>
             </div>
         </div>
-        @endif
 
         <!-- 技能队列 -->
-        @if($skillQueue && count($skillQueue) > 0)
         <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 eve-glow">
             <h2 class="text-xl font-semibold mb-4">⏳ 技能队列</h2>
-            <div class="space-y-3">
-                @foreach(array_slice($skillQueue, 0, 5) as $index => $queueItem)
-                <div class="bg-white/5 rounded-lg p-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <div>
-                            <span class="font-medium">
-                                {{ $index + 1 }}. {{ $queueItem['skill_name'] ?? '未知技能' }}
-                            </span>
-                            <span class="text-xs text-blue-300 ml-2">
-                                (ID: {{ $queueItem['skill_id'] ?? 'N/A' }})
-                            </span>
-                        </div>
-                        <span class="text-sm text-blue-200">
-                            等级 {{ $queueItem['finished_level'] ?? 0 }}
-                        </span>
+            <div id="skill-queue-content">
+                <!-- 骨架屏 -->
+                <div class="space-y-3">
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <div class="skeleton h-5 w-3/4 mb-2"></div>
+                        <div class="skeleton h-2 w-full mb-1"></div>
+                        <div class="skeleton h-2 w-1/2"></div>
                     </div>
-                    <div class="w-full bg-white/10 rounded-full h-2">
-                        @php
-                            $progress = 0;
-                            if (isset($queueItem['progress']) && isset($queueItem['completion'])) {
-                                $progress = $queueItem['progress'] / $queueItem['completion'] * 100;
-                            }
-                        @endphp
-                        <div class="bg-blue-500 h-2 rounded-full" style="width: {{ $progress }}%"></div>
-                    </div>
-                    <div class="text-xs text-blue-300 mt-1">
-                        进度：{{ number_format($progress, 1) }}%
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <div class="skeleton h-5 w-3/4 mb-2"></div>
+                        <div class="skeleton h-2 w-full mb-1"></div>
+                        <div class="skeleton h-2 w-1/2"></div>
                     </div>
                 </div>
-                @endforeach
             </div>
         </div>
-        @endif
-
-        <!-- 快捷操作 -->
-        <div class="grid md:grid-cols-3 gap-4">
-            <a href="{{ route('skills.index') }}" 
-               class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow">
-                <div class="text-3xl mb-2">📚</div>
-                <div class="font-semibold">技能队列</div>
-            </a>
-            <a href="{{ route('characters.index') }}" 
-               class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow">
-                <div class="text-3xl mb-2">👥</div>
-                <div class="font-semibold">角色管理</div>
-            </a>
-            <a href="{{ route('assets.index') }}" 
-               class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center hover:bg-white/20 transition-all eve-glow">
-                <div class="text-3xl mb-2">📦</div>
-                <div class="font-semibold">资产列表</div>
-            </a>
-        </div>
     </div>
+
+    <!-- JavaScript 异步加载数据 -->
+    <script>
+        // API 端点
+        const API_ENDPOINTS = {
+            serverStatus: '{{ route("api.dashboard.server-status") }}',
+            skills: '{{ route("api.dashboard.skills") }}',
+            skillQueue: '{{ route("api.dashboard.skill-queue") }}',
+        };
+
+        // 工具函数：格式化数字
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // 工具函数：显示错误信息
+        function showError(containerId, icon, title, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="text-5xl mb-4">${icon}</div>
+                    <p class="text-blue-300 text-lg mb-2">${title}</p>
+                    <p class="text-blue-400 text-sm">${message}</p>
+                </div>
+            `;
+        }
+
+        // 加载服务器状态
+        async function loadServerStatus() {
+            try {
+                const response = await fetch(API_ENDPOINTS.serverStatus, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin', // 重要！携带 Cookie（Session）
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    const container = document.getElementById('server-status-content');
+                    
+                    // 根据 VIP 状态和玩家数决定显示颜色
+                    let playerColor = 'text-green-400';
+                    let statusBadge = '';
+                    
+                    if (data.vip) {
+                        // VIP 模式 - GM 测试中，未正式开服
+                        playerColor = 'text-yellow-400';
+                        statusBadge = `
+                            <div class="text-center md:col-span-3 mt-4">
+                                <span class="bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-lg text-sm border border-yellow-500/50">
+                                    ⚠️ VIP 模式 - GM 测试中，未正式开服
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-3xl font-bold ${playerColor}">${formatNumber(data.players)}</div>
+                                <div class="text-sm text-blue-200">在线玩家</div>
+                                ${data.vip ? '<div class="text-xs text-yellow-400 mt-1">VIP 模式</div>' : ''}
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-blue-400">${data.server_version}</div>
+                                <div class="text-sm text-blue-200">服务器版本</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-purple-400">${data.status_text || '已开服'}</div>
+                                <div class="text-sm text-blue-200">服务器状态</div>
+                            </div>
+                        </div>
+                        ${statusBadge}
+                    `;
+                } else {
+                    let icon = '📡';
+                    let title = '无法获取服务器状态';
+                    let message = '请稍后再试';
+                    
+                    if (result.error === 'server_maintenance') {
+                        icon = '⚙️';
+                        title = '服务器维护中';
+                        message = '国服每天 11:00 进行例行维护，API 可访问但服务器处于维护状态';
+                    } else if (result.error === 'server_offline') {
+                        icon = '🔄';
+                        title = '服务器不在线';
+                        message = '服务器正在重启中，请等待开服（通常维护后 5-15 分钟）';
+                    } else if (result.error === 'gateway_timeout') {
+                        icon = '⏱️';
+                        title = '响应超时';
+                        message = '请稍等片刻后刷新重试';
+                    } else if (result.error === 'connection_timeout') {
+                        icon = '🔄';
+                        title = '连接超时';
+                        message = '服务器可能正在重启，请等待后重试';
+                    }
+                    
+                    showError('server-status-content', icon, title, message);
+                }
+            } catch (error) {
+                console.error('加载服务器状态失败:', error);
+                showError('server-status-content', '⚠️', '加载失败', '网络错误，请刷新页面重试');
+            }
+        }
+
+        // 加载技能数据
+        async function loadSkills() {
+            try {
+                const response = await fetch(API_ENDPOINTS.skills, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin', // 重要！携带 Cookie（Session）
+                });
+                
+                // 检查是否是 401 未授权（Token 过期）
+                if (response.status === 401) {
+                    showError('skills-content', '🔐', '未授权', '会话已过期，请刷新页面重新登录');
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    const container = document.getElementById('skills-content');
+                    container.innerHTML = `
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-yellow-400">${formatNumber(data.total_sp)}</div>
+                                <div class="text-sm text-blue-200">总技能点</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-400">${formatNumber(data.unallocated_sp)}</div>
+                                <div class="text-sm text-blue-200">未分配技能点</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-blue-400">${data.skills ? data.skills.length : 0}</div>
+                                <div class="text-sm text-blue-200">已学技能数</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    let title = result.error === 'connection_timeout' ? '无法获取技能数据' : '技能数据暂时不可用';
+                    let message = result.error === 'connection_timeout' ? '服务器重启期间，技能数据可能无法访问' : '请稍后再试';
+                    showError('skills-content', '📚', title, message);
+                }
+            } catch (error) {
+                console.error('加载技能数据失败:', error);
+                showError('skills-content', '📚', '加载失败', '网络错误，请刷新页面重试');
+            }
+        }
+
+        // 加载技能队列
+        async function loadSkillQueue() {
+            try {
+                const response = await fetch(API_ENDPOINTS.skillQueue, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin', // 重要！携带 Cookie（Session）
+                });
+                
+                // 检查是否是 401 未授权（Token 过期）
+                if (response.status === 401) {
+                    showError('skill-queue-content', '🔐', '未授权', '会话已过期，请刷新页面重新登录');
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    const queue = result.data.slice(0, 5); // 只显示前 5 个
+                    const container = document.getElementById('skill-queue-content');
+                    
+                    let html = '<div class="space-y-3">';
+                    queue.forEach((item, index) => {
+                        const progress = item.progress && item.completion 
+                            ? (item.progress / item.completion * 100).toFixed(1) 
+                            : 0;
+                        
+                        html += `
+                            <div class="bg-white/5 rounded-lg p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <div>
+                                        <span class="font-medium">${index + 1}. ${item.skill_name || '未知技能'}</span>
+                                        <span class="text-xs text-blue-300 ml-2">(ID: ${item.skill_id || 'N/A'})</span>
+                                    </div>
+                                    <span class="text-sm text-blue-200">等级 ${item.finished_level || 0}</span>
+                                </div>
+                                <div class="w-full bg-white/10 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: ${progress}%"></div>
+                                </div>
+                                <div class="text-xs text-blue-300 mt-1">进度：${progress}%</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    
+                    if (result.data.length > 5) {
+                        html += `<div class="text-center mt-4 text-sm text-blue-400">还有 ${result.data.length - 5} 个技能在队列中...</div>`;
+                    }
+                    
+                    container.innerHTML = html;
+                } else if (result.success && (!result.data || result.data.length === 0)) {
+                    const container = document.getElementById('skill-queue-content');
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="text-5xl mb-4">⏳</div>
+                            <p class="text-blue-300">技能队列为空</p>
+                            <p class="text-blue-400 text-sm mt-2">当前没有正在训练的技能</p>
+                        </div>
+                    `;
+                } else {
+                    let title = result.error === 'connection_timeout' ? '无法获取技能队列' : '技能队列暂时不可用';
+                    let message = result.error === 'connection_timeout' ? '服务器重启期间，技能队列数据可能无法访问' : '请稍后再试';
+                    showError('skill-queue-content', '⏳', title, message);
+                }
+            } catch (error) {
+                console.error('加载技能队列失败:', error);
+                showError('skill-queue-content', '⏳', '加载失败', '网络错误，请刷新页面重试');
+            }
+        }
+
+        // 页面加载完成后开始异步加载数据
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 开始异步加载数据...');
+            
+            // 并行加载所有数据
+            Promise.all([
+                loadServerStatus(),
+                loadSkills(),
+                loadSkillQueue(),
+            ]).then(() => {
+                console.log('✅ 所有数据加载完成');
+            }).catch(error => {
+                console.error('❌ 数据加载失败:', error);
+            });
+        });
+
+        // 可选：定时刷新（每 30 秒刷新服务器状态）
+        setInterval(() => {
+            loadServerStatus();
+        }, 30000);
+    </script>
 </body>
 </html>
