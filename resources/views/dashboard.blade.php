@@ -191,18 +191,21 @@
                         : `<span class="text-blue-400">无联盟</span>`;
                     
                     container.innerHTML = `
-                        <div class="grid grid-cols-3 gap-4">
+                        <div class="grid md:grid-cols-3 gap-4">
                             <div class="text-center">
+                                <div class="text-3xl font-bold text-blue-400">${data.character_name}</div>
                                 <div class="text-sm text-blue-200">角色</div>
-                                <div class="text-lg">${data.character_name} <span class="text-sm text-blue-400">(ID: ${data.character_id})</span></div>
+                                <div class="text-xs text-blue-400 mt-1">(ID: ${data.character_id})</div>
                             </div>
                             <div class="text-center">
+                                <div class="text-3xl font-bold text-purple-400">${data.corporation_name}</div>
                                 <div class="text-sm text-blue-200">军团</div>
-                                <div class="text-lg">${data.corporation_name} <span class="text-sm text-blue-400">(ID: ${data.corporation_id})</span></div>
+                                <div class="text-xs text-purple-400 mt-1">(ID: ${data.corporation_id})</div>
                             </div>
                             <div class="text-center">
+                                <div class="text-3xl font-bold text-green-400">${data.has_alliance ? data.alliance_name : '无联盟'}</div>
                                 <div class="text-sm text-blue-200">联盟</div>
-                                <div class="text-lg">${allianceDisplay}</div>
+                                ${data.has_alliance ? `<div class="text-xs text-green-400 mt-1">(ID: ${data.alliance_id})</div>` : ''}
                             </div>
                         </div>
                     `;
