@@ -248,18 +248,14 @@
                     
                     // 联盟信息（可能为空）
                     const allianceDisplay = data.has_alliance 
-                        ? `<div class="text-lg">${data.alliance_name} <span class="text-sm text-blue-400">(ID: ${data.alliance_id})</span></div>`
-                        : `<div class="text-lg text-blue-400">无联盟</div>`;
+                        ? `${data.alliance_name} <span class="text-sm text-blue-400">(ID: ${data.alliance_id})</span>`
+                        : `<span class="text-blue-400">无联盟</span>`;
                     
                     container.innerHTML = `
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>
-                                <div class="text-sm text-blue-200">角色名称</div>
-                                <div class="text-lg">${data.character_name}</div>
-                            </div>
-                            <div>
-                                <div class="text-sm text-blue-200">角色 ID</div>
-                                <div class="text-lg">${data.character_id}</div>
+                                <div class="text-sm text-blue-200">角色</div>
+                                <div class="text-lg">${data.character_name} <span class="text-sm text-blue-400">(ID: ${data.character_id})</span></div>
                             </div>
                             <div>
                                 <div class="text-sm text-blue-200">军团</div>
@@ -267,7 +263,7 @@
                             </div>
                             <div>
                                 <div class="text-sm text-blue-200">联盟</div>
-                                ${allianceDisplay}
+                                <div class="text-lg">${allianceDisplay}</div>
                             </div>
                         </div>
                     `;
