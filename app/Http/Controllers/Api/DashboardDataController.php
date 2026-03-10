@@ -54,6 +54,8 @@ class DashboardDataController extends Controller
                         'vip' => $isVip,
                         'start_time' => $data['start_time'] ?? null,
                         'status_text' => $this->getStatusText($isVip, $players),
+                        'is_online' => true,
+                        'is_maintenance' => false,
                     ],
                 ]);
             } elseif ($statusResponse->status() === 503) {

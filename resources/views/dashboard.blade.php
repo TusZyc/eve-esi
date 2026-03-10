@@ -34,6 +34,26 @@
             height: 24px;
             animation: spin 1s linear infinite;
         }
+        /* 状态指示灯 */
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-dot.online {
+            background-color: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
+        }
+        .status-dot.maintenance {
+            background-color: #eab308;
+            box-shadow: 0 0 10px #eab308;
+        }
+        .status-dot.offline {
+            background-color: #ef4444;
+            box-shadow: 0 0 10px #ef4444;
+        }
     </style>
 </head>
 <body class="eve-bg min-h-screen text-white">
@@ -75,18 +95,26 @@
             <h2 class="text-xl font-semibold mb-4">📡 服务器状态</h2>
             <div id="server-status-content">
                 <!-- 骨架屏 -->
-                <div class="grid md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-5 gap-4 text-sm">
                     <div class="text-center">
-                        <div class="skeleton h-10 w-24 mx-auto mb-2"></div>
-                        <div class="skeleton h-4 w-20 mx-auto"></div>
+                        <div class="skeleton h-6 w-16 mx-auto mb-1"></div>
+                        <div class="skeleton h-3 w-12 mx-auto"></div>
                     </div>
                     <div class="text-center">
-                        <div class="skeleton h-10 w-32 mx-auto mb-2"></div>
-                        <div class="skeleton h-4 w-20 mx-auto"></div>
+                        <div class="skeleton h-6 w-16 mx-auto mb-1"></div>
+                        <div class="skeleton h-3 w-12 mx-auto"></div>
                     </div>
                     <div class="text-center">
-                        <div class="skeleton h-10 w-24 mx-auto mb-2"></div>
-                        <div class="skeleton h-4 w-20 mx-auto"></div>
+                        <div class="skeleton h-6 w-20 mx-auto mb-1"></div>
+                        <div class="skeleton h-3 w-12 mx-auto"></div>
+                    </div>
+                    <div class="text-center">
+                        <div class="skeleton h-6 w-24 mx-auto mb-1"></div>
+                        <div class="skeleton h-3 w-12 mx-auto"></div>
+                    </div>
+                    <div class="text-center">
+                        <div class="skeleton h-6 w-12 mx-auto mb-1"></div>
+                        <div class="skeleton h-3 w-12 mx-auto"></div>
                     </div>
                 </div>
             </div>
@@ -97,7 +125,11 @@
             <h2 class="text-xl font-semibold mb-4">👤 角色信息</h2>
             <div id="character-info-content">
                 <!-- 骨架屏 -->
-                <div class="grid md:grid-cols-3 gap-4">
+                <div class="grid md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="skeleton h-4 w-20 mb-2"></div>
+                        <div class="skeleton h-6 w-32"></div>
+                    </div>
                     <div class="text-center">
                         <div class="skeleton h-4 w-20 mb-2"></div>
                         <div class="skeleton h-6 w-32"></div>
@@ -144,11 +176,25 @@
             serverStatus: '{{ route("api.dashboard.server-status") }}',
             skills: '{{ route("api.dashboard.skills") }}',
             characterInfo: '{{ route("api.dashboard.character-info") }}',
+            characterLocation: '{{ route("api.dashboard.character-location") }}',
         };
 
         // 工具函数：格式化数字
         function formatNumber(num) {
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // 工具函数：格式化时间
+        function formatTime(isoString) {
+            if (!isoString) return 'N/A';
+            const date = new Date(isoString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
         }
 
         // 工具函数：显示错误信息
@@ -161,6 +207,92 @@
                     <p class="text-blue-400 text-sm">${message}</p>
                 </div>
             `;
+        }
+
+        // 加载服务器状态
+        async function loadServerStatus() {
+            try {
+                const response = await fetch(API_ENDPOINTS.serverStatus, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin',
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    const container = document.getElementById('server-status-content');
+                    
+                    // 判断状态
+                    let statusText = '在线';
+                    let statusClass = 'online';
+                    let statusColor = 'text-green-500';
+                    
+                    if (data.is_maintenance) {
+                        statusText = '调试中';
+                        statusClass = 'maintenance';
+                        statusColor = 'text-yellow-500';
+                    } else if (!data.is_online) {
+                        statusText = '离线';
+                        statusClass = 'offline';
+                        statusColor = 'text-red-500';
+                    }
+                    
+                    // VIP 模式显示
+                    const vipText = data.vip ? '是' : '否';
+                    const vipColor = data.vip ? 'text-yellow-500' : 'text-green-500';
+                    
+                    container.innerHTML = `
+                        <div class="grid grid-cols-5 gap-4 text-sm">
+                            <div class="text-center">
+                                <div class="font-semibold ${statusColor}">
+                                    <span class="status-dot ${statusClass}"></span>${statusText}
+                                </div>
+                                <div class="text-xs text-blue-300 mt-1">状态</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="font-semibold text-green-500">${formatNumber(data.players)}</div>
+                                <div class="text-xs text-blue-300 mt-1">在线玩家</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="font-semibold text-blue-500">${data.server_version}</div>
+                                <div class="text-xs text-blue-300 mt-1">服务器版本</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="font-semibold text-purple-500">${formatTime(data.start_time)}</div>
+                                <div class="text-xs text-blue-300 mt-1">启动时间</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="font-semibold ${vipColor}">${vipText}</div>
+                                <div class="text-xs text-blue-300 mt-1">VIP 模式</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    let icon = '📡';
+                    let title = '无法获取服务器状态';
+                    let message = '请稍后再试';
+                    
+                    if (result.error === 'server_maintenance') {
+                        icon = '⚙️';
+                        title = '服务器维护中';
+                        message = '国服每天 11:00 进行例行维护';
+                    } else if (result.error === 'server_offline') {
+                        icon = '🔄';
+                        title = '服务器不在线';
+                        message = '服务器正在重启中';
+                    }
+                    
+                    showError('server-status-content', icon, title, message);
+                }
+            } catch (error) {
+                console.error('加载服务器状态失败:', error);
+                showError('server-status-content', '⚠️', '加载失败', '网络错误，请刷新页面重试');
+            }
         }
 
         // 加载角色信息
@@ -187,28 +319,32 @@
                     const container = document.getElementById('character-info-content');
                     
                     const allianceDisplay = data.has_alliance 
-                        ? `${data.alliance_name} <span class="text-sm text-blue-400">(ID: ${data.alliance_id})</span>`
+                        ? `${data.alliance_name}<span class="text-xs text-blue-400 ml-1">(ID: ${data.alliance_id})</span>`
                         : `<span class="text-blue-400">无联盟</span>`;
                     
                     container.innerHTML = `
-                        <div class="grid md:grid-cols-3 gap-4">
+                        <div class="grid md:grid-cols-4 gap-4">
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-blue-400">${data.character_name}</div>
-                                <div class="text-sm text-blue-200">角色</div>
-                                <div class="text-xs text-blue-400 mt-1">(ID: ${data.character_id})</div>
+                                <div class="text-sm text-blue-200 mb-1">角色</div>
+                                <div class="text-3xl font-bold text-blue-400">${data.character_name}<span class="text-xs text-blue-400 ml-2">(ID: ${data.character_id})</span></div>
                             </div>
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-purple-400">${data.corporation_name}</div>
-                                <div class="text-sm text-blue-200">军团</div>
-                                <div class="text-xs text-purple-400 mt-1">(ID: ${data.corporation_id})</div>
+                                <div class="text-sm text-blue-200 mb-1">军团</div>
+                                <div class="text-3xl font-bold text-purple-400">${data.corporation_name}<span class="text-xs text-purple-400 ml-2">(ID: ${data.corporation_id})</span></div>
                             </div>
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-green-400">${data.has_alliance ? data.alliance_name : '无联盟'}</div>
-                                <div class="text-sm text-blue-200">联盟</div>
-                                ${data.has_alliance ? `<div class="text-xs text-green-400 mt-1">(ID: ${data.alliance_id})</div>` : ''}
+                                <div class="text-sm text-blue-200 mb-1">联盟</div>
+                                <div class="text-3xl font-bold text-green-400">${allianceDisplay}</div>
+                            </div>
+                            <div class="text-center" id="location-content">
+                                <div class="text-sm text-blue-200 mb-1">当前位置</div>
+                                <div class="loading-spinner inline-block"></div>
                             </div>
                         </div>
                     `;
+                    
+                    // 加载位置信息
+                    loadCharacterLocation();
                 } else {
                     showError('character-info-content', '⚠️', '加载失败', result.message || '无法获取角色信息');
                 }
@@ -218,10 +354,10 @@
             }
         }
 
-        // 加载服务器状态
-        async function loadServerStatus() {
+        // 加载角色位置信息
+        async function loadCharacterLocation() {
             try {
-                const response = await fetch(API_ENDPOINTS.serverStatus, {
+                const response = await fetch(API_ENDPOINTS.characterLocation, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
@@ -231,71 +367,27 @@
                 });
                 
                 const result = await response.json();
+                const container = document.getElementById('location-content');
                 
-                if (result.success) {
-                    const data = result.data;
-                    const container = document.getElementById('server-status-content');
-                    
-                    let playerColor = 'text-green-400';
-                    let statusBadge = '';
-                    
-                    if (data.vip) {
-                        playerColor = 'text-yellow-400';
-                        statusBadge = `
-                            <div class="text-center md:col-span-3 mt-4">
-                                <span class="bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-lg text-sm border border-yellow-500/50">
-                                    ⚠️ VIP 模式 - GM 测试中，未正式开服
-                                </span>
-                            </div>
-                        `;
-                    }
-                    
+                if (result.success && result.data) {
+                    const locationText = result.data.location_display || '未停靠';
                     container.innerHTML = `
-                        <div class="grid md:grid-cols-3 gap-4">
-                            <div class="text-center">
-                                <div class="text-3xl font-bold ${playerColor}">${formatNumber(data.players)}</div>
-                                <div class="text-sm text-blue-200">在线玩家</div>
-                                ${data.vip ? '<div class="text-xs text-yellow-400 mt-1">VIP 模式</div>' : ''}
-                            </div>
-                            <div class="text-center">
-                                <div class="text-3xl font-bold text-blue-400">${data.server_version}</div>
-                                <div class="text-sm text-blue-200">服务器版本</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-3xl font-bold text-purple-400">${data.status_text || '已开服'}</div>
-                                <div class="text-sm text-blue-200">服务器状态</div>
-                            </div>
-                        </div>
-                        ${statusBadge}
+                        <div class="text-sm text-blue-200 mb-1">当前位置</div>
+                        <div class="text-lg font-semibold text-yellow-400">${locationText}</div>
                     `;
                 } else {
-                    let icon = '📡';
-                    let title = '无法获取服务器状态';
-                    let message = '请稍后再试';
-                    
-                    if (result.error === 'server_maintenance') {
-                        icon = '⚙️';
-                        title = '服务器维护中';
-                        message = '国服每天 11:00 进行例行维护，API 可访问但服务器处于维护状态';
-                    } else if (result.error === 'server_offline') {
-                        icon = '🔄';
-                        title = '服务器不在线';
-                        message = '服务器正在重启中，请等待开服（通常维护后 5-15 分钟）';
-                    } else if (result.error === 'gateway_timeout') {
-                        icon = '⏱️';
-                        title = '响应超时';
-                        message = '请稍等片刻后刷新重试';
-                    } else if (result.error === 'connection_timeout') {
-                        icon = '🔄';
-                        title = '连接超时';
-                        message = '服务器可能正在重启，请等待后重试';
-                    }
-                    
-                    showError('server-status-content', icon, title, message);
+                    container.innerHTML = `
+                        <div class="text-sm text-blue-200 mb-1">当前位置</div>
+                        <div class="text-lg font-semibold text-blue-400">未停靠</div>
+                    `;
                 }
             } catch (error) {
-                console.error('加载服务器状态失败:', error);
-                showError('server-status-content', '⚠️', '加载失败', '网络错误，请刷新页面重试');
+                console.error('加载位置信息失败:', error);
+                const container = document.getElementById('location-content');
+                container.innerHTML = `
+                    <div class="text-sm text-blue-200 mb-1">当前位置</div>
+                    <div class="text-lg font-semibold text-blue-400">未停靠</div>
+                `;
             }
         }
 
@@ -354,8 +446,8 @@
             
             // 并行加载所有数据
             Promise.all([
-                loadCharacterInfo(),
                 loadServerStatus(),
+                loadCharacterInfo(),
                 loadSkills(),
             ]).then(() => {
                 console.log('✅ 所有数据加载完成');

@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\Api\DashboardDataController;
 use App\Http\Controllers\Api\AssetDataController;
+use App\Http\Controllers\Api\CharacterLocationController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\SkillController;
 
@@ -34,6 +35,7 @@ Route::middleware(['auth', 'eve.refresh'])->prefix('api/dashboard')->group(funct
     Route::get('/skill-queue', [DashboardDataController::class, 'skillQueue'])->name('api.dashboard.skill-queue');
     Route::get('/assets', [AssetDataController::class, 'index'])->name('api.dashboard.assets');
     Route::get('/character-info', [DashboardDataController::class, 'characterInfo'])->name('api.dashboard.character-info');
+    Route::get('/character-location', [CharacterLocationController::class, 'index'])->name('api.dashboard.character-location');
 });
 
 // 需要认证的路由（自动刷新 EVE Token）
