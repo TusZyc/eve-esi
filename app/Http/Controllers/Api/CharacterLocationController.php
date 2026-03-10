@@ -71,12 +71,11 @@ class CharacterLocationController extends Controller
                 'structure_id' => $structureId,
             ]);
             
-            // 查询名称（先查询星系名称）
+            // 查询名称
             $names = [];
             $idsToQuery = [];
             if ($solarSystemId) $idsToQuery[] = $solarSystemId;
             if ($stationId) $idsToQuery[] = $stationId;
-            // structure_id 可能超过 int32 范围，跳过查询
             
             if (!empty($idsToQuery)) {
                 $namesResponse = Http::timeout(10)
@@ -93,6 +92,7 @@ class CharacterLocationController extends Controller
             
             // 构建位置显示文本
             $solarSystemName = $names[$solarSystemId] ?? '未知星系';
+            $locationDisplay = '';
             
             if ($stationId && isset($names[$stationId])) {
                 // 在 NPC 空间站
@@ -101,8 +101,23 @@ class CharacterLocationController extends Controller
                 $shortStationName = $this->shortenStationName($stationName);
                 $locationDisplay = "{$solarSystemName} - {$shortStationName}";
             } elseif ($structureId) {
-                // 在玩家建筑（structure_id 太大无法查询名称）
-                $locationDisplay = "{$solarSystemName} - 玩家建筑";
+                // 在玩家建筑 - 使用专门的结构信息接口
+                try {
+                    $structureResponse = Http::timeout(10)
+                        ->withToken($user->access_token)
+                        ->get(config('esi.base_url') . "universe/structures/{$structureId}/");
+                    
+                    if ($structureResponse->ok()) {
+                        $structureData = $structureResponse->json();
+                        $structureName = $structureData['name'] ?? '玩家建筑';
+                        $locationDisplay = "{$solarSystemName} - {$structureName}";
+                    } else {
+                        $locationDisplay = "{$solarSystemName} - 玩家建筑";
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('📍 [API] 建筑名称查询失败：' . $e->getMessage());
+                    $locationDisplay = "{$solarSystemName} - 玩家建筑";
+                }
             } else {
                 // 在太空中（未停靠）
                 $locationDisplay = "{$solarSystemName} - 未停靠";
