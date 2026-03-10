@@ -247,27 +247,27 @@
                     const vipColor = data.vip ? 'text-yellow-500' : 'text-green-500';
                     
                     container.innerHTML = `
-                        <div class="grid grid-cols-5 gap-4 text-sm">
+                        <div class="grid grid-cols-5 gap-4">
                             <div class="text-center">
-                                <div class="font-semibold ${statusColor}">
+                                <div class="text-lg font-bold ${statusColor}">
                                     <span class="status-dot ${statusClass}"></span>${statusText}
                                 </div>
                                 <div class="text-xs text-blue-300 mt-1">状态</div>
                             </div>
                             <div class="text-center">
-                                <div class="font-semibold text-green-500">${formatNumber(data.players)}</div>
+                                <div class="text-lg font-bold text-green-500">${formatNumber(data.players)}</div>
                                 <div class="text-xs text-blue-300 mt-1">在线玩家</div>
                             </div>
                             <div class="text-center">
-                                <div class="font-semibold text-blue-500">${data.server_version}</div>
+                                <div class="text-lg font-bold text-blue-500">${data.server_version}</div>
                                 <div class="text-xs text-blue-300 mt-1">服务器版本</div>
                             </div>
                             <div class="text-center">
-                                <div class="font-semibold text-purple-500">${formatTime(data.start_time)}</div>
+                                <div class="text-lg font-bold text-purple-500">${formatTime(data.start_time)}</div>
                                 <div class="text-xs text-blue-300 mt-1">启动时间</div>
                             </div>
                             <div class="text-center">
-                                <div class="font-semibold ${vipColor}">${vipText}</div>
+                                <div class="text-lg font-bold ${vipColor}">${vipText}</div>
                                 <div class="text-xs text-blue-300 mt-1">VIP 模式</div>
                             </div>
                         </div>
@@ -325,19 +325,19 @@
                     container.innerHTML = `
                         <div class="grid md:grid-cols-4 gap-4">
                             <div class="text-center">
-                                <div class="text-sm text-blue-200 mb-1">角色</div>
-                                <div class="text-3xl font-bold text-blue-400">${data.character_name}<span class="text-xs text-blue-400 ml-2">(ID: ${data.character_id})</span></div>
+                                <div class="text-xs text-blue-300 mb-1">角色</div>
+                                <div class="text-xl font-bold text-blue-400">${data.character_name}<span class="text-xs text-blue-400 ml-2">(ID: ${data.character_id})</span></div>
                             </div>
                             <div class="text-center">
-                                <div class="text-sm text-blue-200 mb-1">军团</div>
-                                <div class="text-3xl font-bold text-purple-400">${data.corporation_name}<span class="text-xs text-purple-400 ml-2">(ID: ${data.corporation_id})</span></div>
+                                <div class="text-xs text-blue-300 mb-1">军团</div>
+                                <div class="text-xl font-bold text-purple-400">${data.corporation_name}<span class="text-xs text-purple-400 ml-2">(ID: ${data.corporation_id})</span></div>
                             </div>
                             <div class="text-center">
-                                <div class="text-sm text-blue-200 mb-1">联盟</div>
-                                <div class="text-3xl font-bold text-green-400">${allianceDisplay}</div>
+                                <div class="text-xs text-blue-300 mb-1">联盟</div>
+                                <div class="text-xl font-bold text-green-400">${allianceDisplay}</div>
                             </div>
                             <div class="text-center" id="location-content">
-                                <div class="text-sm text-blue-200 mb-1">当前位置</div>
+                                <div class="text-xs text-blue-300 mb-1">当前位置</div>
                                 <div class="loading-spinner inline-block"></div>
                             </div>
                         </div>
@@ -372,8 +372,8 @@
                 if (result.success && result.data) {
                     const locationText = result.data.location_display || '未停靠';
                     container.innerHTML = `
-                        <div class="text-sm text-blue-200 mb-1">当前位置</div>
-                        <div class="text-lg font-semibold text-yellow-400">${locationText}</div>
+                        <div class="text-xs text-blue-300 mb-1">当前位置</div>
+                        <div class="text-xl font-bold text-yellow-400">${locationText}</div>
                     `;
                 } else {
                     container.innerHTML = `
@@ -416,16 +416,16 @@
                     container.innerHTML = `
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-yellow-400">${formatNumber(data.total_sp)}</div>
-                                <div class="text-sm text-blue-200">总技能点</div>
+                                <div class="text-xl font-bold text-yellow-400">${formatNumber(data.total_sp)}</div>
+                                <div class="text-xs text-blue-300 mt-1">总技能点</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-green-400">${formatNumber(data.unallocated_sp)}</div>
-                                <div class="text-sm text-blue-200">未分配技能点</div>
+                                <div class="text-xl font-bold text-green-400">${formatNumber(data.unallocated_sp)}</div>
+                                <div class="text-xs text-blue-300 mt-1">未分配技能点</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-blue-400">${data.skills ? data.skills.length : 0}</div>
-                                <div class="text-sm text-blue-200">已学技能数</div>
+                                <div class="text-xl font-bold text-blue-400">${data.skills ? data.skills.length : 0}</div>
+                                <div class="text-xs text-blue-300 mt-1">已学技能数</div>
                             </div>
                         </div>
                     `;
